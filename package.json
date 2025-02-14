@@ -1,7 +1,7 @@
 {
-  "name": "vite-template-solid",
-  "version": "0.0.0",
-  "description": "",
+  "name": "wfh-calendar-solid",
+  "version": "0.1.0",
+  "description": "WFH Calendar",
   "type": "module",
   "scripts": {
     "start": "vite",

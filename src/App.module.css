@@ -2,32 +2,65 @@
   text-align: center;
 }
 
-.logo {
-  animation: logo-spin infinite 20s linear;
-  height: 40vmin;
-  pointer-events: none;
-}
-
 .header {
   background-color: #282c34;
-  min-height: 100vh;
+  min-height: 10vh;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: left;
   justify-content: center;
   font-size: calc(10px + 2vmin);
   color: white;
 }
 
-.link {
-  color: #b318f0;
+.yearSelector {
+  text-align: left;
+  padding: 0 0 0.25em 0.5em;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.yearSelector button {
+  width: 3em;
+  height: 2em;
+  vertical-align: text-bottom;
+  margin: 0 1em;
+}
+
+.calendar {
+  margin: 2em auto;
+  border-collapse: collapse;
+}
+
+.calendar thead th {
+  font-weight: normal;
+  font-size: 0.75em;
+  padding-bottom: 0.5em;
+}
+
+.calendar tbody th {
+  font-weight: normal;
+  text-align: left;
+  padding: 0.25em 1em;
+}
+
+.calendar tbody td {
+  position: relative;
+  width: 1.5em;
+  height: 1.75em;
+}
+
+.calendar tbody td.day {
+  border: 1px solid silver;
+}
+
+.calendar tbody td .dayNum {
+  display: none;
+}
+
+.calendar tbody td.day .dayNum {
+  display: block;
+  font-size: 0.7em;
+  color: gray;
+  position: absolute;
+  top: 2px;
+  left: 2px;
 }

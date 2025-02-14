@@ -1,18 +1,49 @@
+# WFH Calendar
+
+Yearly calendar to track days worked from home, in the office, on leave etc. and provide summary stats.
+
+Uses local storage, so no account is required and nothing is sent to any servers.
+
+## To-Do
+
+- click day to choose between (phase 1: cycle between values, phase 2: popup menu)
+    - empty
+    - home
+    - work
+    - leave
+- "format painter" mode (ctrl+click to immediately set to same as last edit)
+- monthly totals
+    - number of weekdays
+    - number of days at home, work, leave, empty
+    - face-to-face percentage (work / (work + home))
+- yearly totals (jan-dec)
+- financial year totals (jul-jun)
+- selection to change financial year system
+- printable layout
+- highlight today
+- support multiple types of leave, work (for different office locations etc.)
+- add a "speculative" flag to record a day as "unsure"
+    - either unsure in the past which category it belongs in, or
+    - unsure in the future what it will be.  
+    - this will assist to keep "what if" plans separate from actual records.
+- add a description/help to the page
+- add footer link to tompaton.com
+- deploy to tompaton.com
+- export data (to csv)
+- backup/restore data (json)
+- show date/number of days since last exported/backed up
+- phone mode
+- sync between devices
+
 ## Usage
 
-Those templates dependencies are maintained via [pnpm](https://pnpm.io) via `pnpm up -Lri`.
-
-This is the reason you see a `pnpm-lock.yaml`. That being said, any package manager will work. This file can be safely be removed once you clone a template.
+In the project directory, first run:
 
 ```bash
 $ npm install # or pnpm install or yarn install
 ```
 
-### Learn more on the [Solid Website](https://solidjs.com) and come chat with us on our [Discord](https://discord.com/invite/solidjs)
-
-## Available Scripts
-
-In the project directory, you can run:
+Then you can run:
 
 ### `npm run dev` or `npm start`
 
@@ -32,3 +63,9 @@ Your app is ready to be deployed!
 ## Deployment
 
 You can deploy the `dist` folder to any static host provider (netlify, surge, now, etc.)
+
+
+# Contact
+
+https://tompaton.com/
+
