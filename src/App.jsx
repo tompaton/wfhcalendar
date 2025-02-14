@@ -4,8 +4,26 @@ import styles from './App.module.css';
 
 const [state, setState] = createStore({
   year: 2025,
+  years: {}, // { year: { month: { day: 'wfh'|'home'|'leave' } } }
 });
 
+function getDayLoc(year, month, day) {
+  return state.years[year]?.[month + 1]?.[day + 1] || '';
+}
+
+function setDayLoc(year, month, day, loc) {
+  setState('years', year, {});
+  setState('years', year, month + 1, {});
+  setState('years', year, month + 1, day + 1, loc);
+}
+
+function cycleLoc(loc) {
+  return { '': 'work', 'work': 'home', 'home': 'leave', 'leave': '' }[loc];
+}
+
+function cycleDayLoc(year, month, day) {
+  setDayLoc(year, month, day, cycleLoc(getDayLoc(year, month, day)));
+}
 
 function initSave() {
   if (localStorage.wfhcalendar) {
@@ -106,8 +124,16 @@ function Day(props) {
   const date = () => new Date(props.year, props.month, props.day + 1);
   const dayName = () => date().toLocaleString('default', { weekday: 'short' })[0];
   const weekday = () => dayName() !== 'S';
+  const dayClass = () => {
+    const result = { [styles.day]: weekday() };
+    const loc = getDayLoc(props.year, props.month, props.day)
+    if (loc) {
+      result[styles[loc]] = true;
+    }
+    return result;
+  };
   return (
-    <td classList={{ [styles.day]: weekday() }}>
+    <td classList={dayClass()} onclick={() => cycleDayLoc(props.year, props.month, props.day)}>
       <span class={styles.dayNum}>{props.day + 1}</span>
     </td>
   );

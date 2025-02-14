@@ -63,4 +63,43 @@
   position: absolute;
   top: 2px;
   left: 2px;
+  z-index: 2;
+}
+
+.day::after {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  display: block;
+  font-size: 1.5em;
+  color: white;
+  opacity: 50%;
+  font-weight: bold;
+  z-index: 1;
+}
+
+.day.work {
+  background-color: orange;
+}
+
+.day.work::after {
+  content: "W";
+}
+
+.day.home {
+  background-color: plum;
+}
+
+.day.home::after {
+  content: "H";
+}
+
+.day.leave {
+  background-color: lightgreen;
+}
+
+.day.leave::after {
+  content: "L";
 }

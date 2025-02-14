@@ -6,11 +6,7 @@ Uses local storage, so no account is required and nothing is sent to any servers
 
 ## To-Do
 
-- click day to choose between (phase 1: cycle between values, phase 2: popup menu)
-    - empty
-    - home
-    - work
-    - leave
+- popup menu to choose between work location
 - "format painter" mode (ctrl+click to immediately set to same as last edit)
 - monthly totals
     - number of weekdays
