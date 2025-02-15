@@ -21,7 +21,6 @@ Uses local storage, so no account is required and nothing is sent to any servers
 - export data (to csv)
 - backup/restore data (json)
 - show date/number of days since last exported/backed up
-- phone mode
 - sync between devices
 - mode to set all unset days to defaults (M/F -> home etc.)
 - keyboard control (arrows, w/h/l keys to select)

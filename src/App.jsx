@@ -1,11 +1,12 @@
 import { createStore } from "solid-js/store";
-import { createDeferred, For, createSignal } from "solid-js";
+import { createDeferred, For, Show } from "solid-js";
 import styles from './App.module.css';
 
 const [state, setState] = createStore({
   year: 2025,
   years: {}, // { year: { month: { day: 'work'|'home'|'leave' } } }
   last_loc: 'work',
+  render_mode: 'mobile'
 });
 
 function getDayLoc(year, month, day) {
@@ -40,26 +41,14 @@ function getCumulativeMonthTotal(year, month, loc) {
   return [...Array(month + 1).keys()].reduce((acc, month) => acc + getMonthTotal(year, month, loc), 0);
 }
 
-function getYearTotal(year, loc) {
-  return getCumulativeMonthTotal(year, 11, loc);
-}
-
-function getYearTotalPercent() {
-  const [year, loc, ...locs] = arguments;
-  const total = locs.reduce((acc, loc_) => acc + getYearTotal(year, loc_), 0);
-  return total ? (getYearTotal(year, loc) / total * 100).toFixed(1) : '';
-}
-
-function getMonthTotalPercent() {
-  const [year, month, loc, ...locs] = arguments;
-  const total = locs.reduce((acc, loc_) => acc + getMonthTotal(year, month, loc_), 0);
-  return total ? (getMonthTotal(year, month, loc) / total * 100).toFixed(1) : '';
-}
-
 function getCumulativeMonthTotalPercent() {
   const [year, month, loc, ...locs] = arguments;
   const total = locs.reduce((acc, loc_) => acc + getCumulativeMonthTotal(year, month, loc_), 0);
   return total ? (getCumulativeMonthTotal(year, month, loc) / total * 100).toFixed(1) : '';
+}
+
+function monthName(month) {
+  return new Date(2025, month, 1).toLocaleString('default', { month: 'long' });
 }
 
 function initSave() {
@@ -75,13 +64,20 @@ function initSave() {
 function App() {
   initSave();
 
+  setState('render_mode', window.innerWidth < 1200 ? 'mobile' : 'desktop');
+
   return (
     <div class={styles.App}>
       <header class={styles.header}>
         <h1>WFH Calendar</h1>
         <YearSelector />
       </header>
-      <Calendar year={state.year} />
+      <Show when={state.render_mode === 'mobile'}>
+        <MobileCalendar year={state.year} />
+      </Show>
+      <Show when={state.render_mode !== 'mobile'}>
+        <DesktopCalendar year={state.year} />
+      </Show>
     </div>
   );
 }
@@ -97,7 +93,7 @@ function YearSelector() {
   );
 }
 
-function Calendar(props) {
+function DesktopCalendar(props) {
   return (
     <table class={styles.calendar}>
       <thead>
@@ -109,6 +105,30 @@ function Calendar(props) {
         )}</For>
       </tbody>
     </table>
+  );
+}
+
+function MobileCalendar(props) {
+  return (
+    <For each={[...Array(12).keys()]}>{(month) => (
+      <>
+        <h3>{monthName(month)}</h3>
+        <table class={styles.calendar}>
+          <thead>
+            <Headers2 />
+          </thead>
+          <tbody>
+            <MonthWeek year={props.year} month={month} week={1} />
+            <MonthWeek year={props.year} month={month} week={2} />
+            <MonthWeek year={props.year} month={month} week={3} />
+            <MonthWeek year={props.year} month={month} week={4} />
+            <MonthWeek year={props.year} month={month} week={5} />
+            <MonthWeek year={props.year} month={month} week={6} />
+          </tbody>
+        </table>
+        <MonthTotals2 year={props.year} month={month} />
+      </>
+    )}</For>
   );
 }
 
@@ -146,23 +166,58 @@ function Headers() {
   );
 }
 
+
+function Headers2() {
+  const days = () => ['', 'M', 'T', 'W', 'T', 'F', ''];
+  return (
+    <>
+      <tr>
+        <For each={days()}>{(day) => (
+          <th>{day}</th>
+        )}</For>
+      </tr>
+    </>
+  );
+}
+
 function Month(props) {
   const first = () => new Date(props.year, props.month, 1);
   const leading_blanks = () => first().getDay();
-  const monthName = () => first().toLocaleString('default', { month: 'long' });
   const daysInMonth = () => new Date(props.year, props.month + 1, 0).getDate();
   const trailing_blanks = () => 6 * 7 - daysInMonth() - leading_blanks();
   const currentMonth = () => new Date().getMonth() === props.month && new Date().getFullYear() === props.year;
 
   return (
     <tr classList={{ [styles.current]: currentMonth() }}>
-      <th>{monthName()}</th>
+      <th>{monthName(props.month)}</th>
       <Blanks count={leading_blanks()} />
       <For each={[...Array(daysInMonth()).keys()]}>{(day) => (
         <Day year={props.year} month={props.month} day={day} />
       )}</For>
       <Blanks count={trailing_blanks()} />
       <MonthTotals year={props.year} month={props.month} />
+    </tr>
+  );
+}
+
+function MonthWeek(props) {
+  const first = () => new Date(props.year, props.month, 1);
+  const leading_blanks = () => first().getDay();
+  const daysInMonth = () => new Date(props.year, props.month + 1, 0).getDate();
+  const trailing_blanks = () => {
+    if (props.week == 6) return Math.min(7, 6 * 7 - daysInMonth() - leading_blanks());
+    if (props.week == 5) return Math.max(0, 6 * 7 - daysInMonth() - leading_blanks() - 7);
+    return 0;
+  }
+  const currentMonth = () => new Date().getMonth() === props.month && new Date().getFullYear() === props.year;
+  const weekDays = () => [...Array(daysInMonth()).keys()].slice(Math.max(0, (props.week - 1) * 7 - leading_blanks()), props.week * 7 - leading_blanks());
+  return (
+    <tr classList={{ [styles.current]: currentMonth() }}>
+      <Blanks count={props.week == 1 ? leading_blanks() : 0} />
+      <For each={weekDays()}>{(day) => (
+        <Day year={props.year} month={props.month} day={day} />
+      )}</For>
+      <Blanks count={trailing_blanks()} />
     </tr>
   );
 }
@@ -208,6 +263,32 @@ function MonthTotals(props) {
       <td>{getCumulativeMonthTotal(props.year, props.month, 'leave') || ''}</td>
       <td>{getCumulativeMonthTotalPercent(props.year, props.month, 'work', 'work', 'home')}</td>
     </>
+  );
+}
+
+function MonthTotals2(props) {
+  return (
+    <table class={styles.calendar}>
+      <thead>
+        <tr>
+          <th colspan={3}>Total</th>
+          <th colspan={3}>Cumulative</th>
+          <th>Percentage</th>
+        </tr>
+        <tr>
+          <th>W</th>
+          <th>H</th>
+          <th>L</th>
+          <th>W</th>
+          <th>H</th>
+          <th>L</th>
+          <th>W</th>
+        </tr>
+      </thead>
+      <tbody>
+        <MonthTotals year={props.year} month={props.month} />
+      </tbody>
+    </table>
   );
 }
 
