@@ -152,9 +152,10 @@ function Month(props) {
   const monthName = () => first().toLocaleString('default', { month: 'long' });
   const daysInMonth = () => new Date(props.year, props.month + 1, 0).getDate();
   const trailing_blanks = () => 6 * 7 - daysInMonth() - leading_blanks();
+  const currentMonth = () => new Date().getMonth() === props.month && new Date().getFullYear() === props.year;
 
   return (
-    <tr>
+    <tr classList={{ [styles.current]: currentMonth() }}>
       <th>{monthName()}</th>
       <Blanks count={leading_blanks()} />
       <For each={[...Array(daysInMonth()).keys()]}>{(day) => (
@@ -183,6 +184,9 @@ function Day(props) {
     const loc = getDayLoc(props.year, props.month, props.day)
     if (loc) {
       result[styles[loc]] = true;
+    }
+    if (new Date().getDate() === props.day + 1 && new Date().getMonth() === props.month && new Date().getFullYear() === props.year) {
+      result[styles.current] = true;
     }
     return result;
   };

@@ -10,7 +10,7 @@
   align-items: left;
   justify-content: center;
   font-size: calc(10px + 2vmin);
-  color: white;
+  color: #bac5d5;
 }
 
 .yearSelector {
@@ -27,7 +27,6 @@
 
 .calendar {
   margin: 2em auto;
-  border-collapse: collapse;
 }
 
 .calendar thead th {
@@ -45,7 +44,16 @@
 .calendar tbody td {
   position: relative;
   width: 1.5em;
-  height: 1.75em;
+  height: 1.5em;
+  border-radius: 20%;
+}
+
+.calendar tr.current th {
+  font-weight: bold;
+}
+
+.calendar tr.current td.current {
+  outline: 2px solid #282c34;
 }
 
 .calendar tbody td.day {
@@ -53,53 +61,59 @@
 }
 
 .calendar tbody td .dayNum {
-  display: none;
-}
-
-.calendar tbody td.day .dayNum {
-  display: block;
   font-size: 0.7em;
-  color: gray;
   position: absolute;
   top: 2px;
   left: 2px;
   z-index: 2;
+  color: silver;
 }
 
-.day::after {
+.calendar tbody td.day.work .dayNum {
+  color: white;
+}
+
+.calendar tbody td.day.home .dayNum {
+  color: white;
+}
+
+.calendar tbody td.day.leave .dayNum {
+  color: white;
+}
+
+td::after {
   position: absolute;
   bottom: 0;
-  left: 0;
-  width: 100%;
+  left: 50%;
+  width: 50%;
   text-align: center;
   display: block;
-  font-size: 1.5em;
-  color: white;
+  font-size: .8em;
+  color: black;
   opacity: 50%;
-  font-weight: bold;
   z-index: 1;
 }
 
-.day.work {
-  background-color: orange;
+td.day.work {
+  background-color: #d59a2e;
 }
 
-.day.work::after {
+td.work::after {
   content: "W";
 }
 
-.day.home {
-  background-color: plum;
+td.day.home {
+  background-color: #c18dc1;
 }
 
-.day.home::after {
+td.home::after {
   content: "H";
 }
 
-.day.leave {
-  background-color: lightgreen;
+td.day.leave {
+  background-color: #a5cea5;
 }
 
-.day.leave::after {
+td.leave::after {
   content: "L";
 }

@@ -10,7 +10,6 @@ Uses local storage, so no account is required and nothing is sent to any servers
 - financial year totals (jul-jun)
 - selection to change financial year system
 - printable layout
-- highlight today
 - support multiple types of leave, work (for different office locations etc.)
 - add a "speculative" flag to record a day as "unsure"
     - either unsure in the past which category it belongs in, or
@@ -25,6 +24,7 @@ Uses local storage, so no account is required and nothing is sent to any servers
 - phone mode
 - sync between devices
 - mode to set all unset days to defaults (M/F -> home etc.)
+- keyboard control (arrows, w/h/l keys to select)
 
 ## Help
 
