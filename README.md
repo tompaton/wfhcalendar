@@ -7,12 +7,6 @@ Uses local storage, so no account is required and nothing is sent to any servers
 ## To-Do
 
 - popup menu to choose between work location
-- "format painter" mode (ctrl+click to immediately set to same as last edit)
-- monthly totals
-    - number of weekdays
-    - number of days at home, work, leave, empty
-    - face-to-face percentage (work / (work + home))
-- yearly totals (jan-dec)
 - financial year totals (jul-jun)
 - selection to change financial year system
 - printable layout
@@ -30,6 +24,12 @@ Uses local storage, so no account is required and nothing is sent to any servers
 - show date/number of days since last exported/backed up
 - phone mode
 - sync between devices
+- mode to set all unset days to defaults (M/F -> home etc.)
+
+## Help
+
+- click to cycle locations for the day
+- ctrl+click to set to same as last work location
 
 ## Usage
 

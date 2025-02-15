@@ -4,7 +4,8 @@ import styles from './App.module.css';
 
 const [state, setState] = createStore({
   year: 2025,
-  years: {}, // { year: { month: { day: 'wfh'|'home'|'leave' } } }
+  years: {}, // { year: { month: { day: 'work'|'home'|'leave' } } }
+  last_loc: 'work',
 });
 
 function getDayLoc(year, month, day) {
@@ -15,14 +16,50 @@ function setDayLoc(year, month, day, loc) {
   setState('years', year, {});
   setState('years', year, month + 1, {});
   setState('years', year, month + 1, day + 1, loc);
+  setState('last_loc', loc);
 }
 
 function cycleLoc(loc) {
   return { '': 'work', 'work': 'home', 'home': 'leave', 'leave': '' }[loc];
 }
 
-function cycleDayLoc(year, month, day) {
-  setDayLoc(year, month, day, cycleLoc(getDayLoc(year, month, day)));
+function dayClick(event, year, month, day) {
+  event.preventDefault();
+  const loc = event.ctrlKey ? state.last_loc : cycleLoc(getDayLoc(year, month, day));
+  setDayLoc(year, month, day, loc);
+}
+
+function getMonthTotal(year, month, loc) {
+  return Object.values(state.years[year]?.[month + 1] || {})
+    .filter((loc_) => loc_ === loc).length;
+}
+
+function getCumulativeMonthTotal(year, month, loc) {
+  if (getMonthTotal(year, month, loc) === 0) return 0;
+  // sum getMonthTotal for all months
+  return [...Array(month + 1).keys()].reduce((acc, month) => acc + getMonthTotal(year, month, loc), 0);
+}
+
+function getYearTotal(year, loc) {
+  return getCumulativeMonthTotal(year, 11, loc);
+}
+
+function getYearTotalPercent() {
+  const [year, loc, ...locs] = arguments;
+  const total = locs.reduce((acc, loc_) => acc + getYearTotal(year, loc_), 0);
+  return total ? (getYearTotal(year, loc) / total * 100).toFixed(1) : '';
+}
+
+function getMonthTotalPercent() {
+  const [year, month, loc, ...locs] = arguments;
+  const total = locs.reduce((acc, loc_) => acc + getMonthTotal(year, month, loc_), 0);
+  return total ? (getMonthTotal(year, month, loc) / total * 100).toFixed(1) : '';
+}
+
+function getCumulativeMonthTotalPercent() {
+  const [year, month, loc, ...locs] = arguments;
+  const total = locs.reduce((acc, loc_) => acc + getCumulativeMonthTotal(year, month, loc_), 0);
+  return total ? (getCumulativeMonthTotal(year, month, loc) / total * 100).toFixed(1) : '';
 }
 
 function initSave() {
@@ -84,12 +121,28 @@ function Headers() {
 
   const days = () => [...daysGen()];
   return (
-    <tr>
-      <th></th>
-      <For each={days()}>{(day) => (
-        <th>{day}</th>
-      )}</For>
-    </tr>
+    <>
+      <tr>
+        <th></th>
+        <th colspan={6 * 7}></th>
+        <th colspan={3}>Total</th>
+        <th colspan={3}>Cumulative</th>
+        <th>Percentage</th>
+      </tr>
+      <tr>
+        <th></th>
+        <For each={days()}>{(day) => (
+          <th>{day}</th>
+        )}</For>
+        <th>W</th>
+        <th>H</th>
+        <th>L</th>
+        <th>W</th>
+        <th>H</th>
+        <th>L</th>
+        <th>W</th>
+      </tr>
+    </>
   );
 }
 
@@ -108,6 +161,7 @@ function Month(props) {
         <Day year={props.year} month={props.month} day={day} />
       )}</For>
       <Blanks count={trailing_blanks()} />
+      <MonthTotals year={props.year} month={props.month} />
     </tr>
   );
 }
@@ -133,9 +187,23 @@ function Day(props) {
     return result;
   };
   return (
-    <td classList={dayClass()} onclick={() => cycleDayLoc(props.year, props.month, props.day)}>
+    <td classList={dayClass()} onclick={(event) => dayClick(event, props.year, props.month, props.day)}>
       <span class={styles.dayNum}>{props.day + 1}</span>
     </td>
+  );
+}
+
+function MonthTotals(props) {
+  return (
+    <>
+      <td>{getMonthTotal(props.year, props.month, 'work') || ''}</td>
+      <td>{getMonthTotal(props.year, props.month, 'home') || ''}</td>
+      <td>{getMonthTotal(props.year, props.month, 'leave') || ''}</td>
+      <td>{getCumulativeMonthTotal(props.year, props.month, 'work') || ''}</td>
+      <td>{getCumulativeMonthTotal(props.year, props.month, 'home') || ''}</td>
+      <td>{getCumulativeMonthTotal(props.year, props.month, 'leave') || ''}</td>
+      <td>{getCumulativeMonthTotalPercent(props.year, props.month, 'work', 'work', 'home')}</td>
+    </>
   );
 }
 
