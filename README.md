@@ -11,10 +11,6 @@ Uses local storage, so no account is required and nothing is sent to any servers
 - selection to change financial year system
 - printable layout
 - support multiple types of leave, work (for different office locations etc.)
-- add a "speculative" flag to record a day as "unsure"
-    - either unsure in the past which category it belongs in, or
-    - unsure in the future what it will be.  
-    - this will assist to keep "what if" plans separate from actual records.
 - add a description/help to the page
 - add footer link to tompaton.com
 - deploy to tompaton.com
@@ -29,6 +25,7 @@ Uses local storage, so no account is required and nothing is sent to any servers
 
 - click to cycle locations for the day
 - ctrl+click to set to same as last work location
+- shift+click to toggle "maybe" location for the day
 
 ## Usage
 

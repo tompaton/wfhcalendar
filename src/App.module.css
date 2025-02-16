@@ -101,6 +101,10 @@ td.day.work {
   background-color: #d59a2e;
 }
 
+td.day.work.maybe {
+  background: linear-gradient(to right bottom, #d59a2e 50%, white 50%);
+}
+
 td.work::after {
   content: "W";
 }
@@ -109,12 +113,20 @@ td.day.home {
   background-color: #c18dc1;
 }
 
+td.day.home.maybe {
+  background: linear-gradient(to right bottom, #c18dc1 50%, white 50%);
+}
+
 td.home::after {
   content: "H";
 }
 
 td.day.leave {
   background-color: #a5cea5;
+}
+
+td.day.leave.maybe {
+  background: linear-gradient(to right bottom, #a5cea5 50%, white 50%);
 }
 
 td.leave::after {

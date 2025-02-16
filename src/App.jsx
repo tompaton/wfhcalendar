@@ -5,6 +5,7 @@ import styles from './App.module.css';
 const [state, setState] = createStore({
   year: 2025,
   years: {}, // { year: { month: { day: 'work'|'home'|'leave' } } }
+  maybe: {}, // { year: { month: { day: true|false } } }
   last_loc: 'work',
   render_mode: 'mobile'
 });
@@ -24,8 +25,22 @@ function cycleLoc(loc) {
   return { '': 'work', 'work': 'home', 'home': 'leave', 'leave': '' }[loc];
 }
 
+function getDayMaybe(year, month, day) {
+  return !!state.maybe[year]?.[month + 1]?.[day + 1];
+}
+
+function setDayMaybe(year, month, day, maybe) {
+  setState('maybe', year, {});
+  setState('maybe', year, month + 1, {});
+  setState('maybe', year, month + 1, day + 1, maybe);
+}
+
 function dayClick(event, year, month, day) {
   event.preventDefault();
+  if (event.shiftKey) {
+    setDayMaybe(year, month, day, !getDayMaybe(year, month, day));
+    return;
+  }
   const loc = event.ctrlKey ? state.last_loc : cycleLoc(getDayLoc(year, month, day));
   setDayLoc(year, month, day, loc);
 }
@@ -242,6 +257,9 @@ function Day(props) {
     }
     if (new Date().getDate() === props.day + 1 && new Date().getMonth() === props.month && new Date().getFullYear() === props.year) {
       result[styles.current] = true;
+    }
+    if (getDayMaybe(props.year, props.month, props.day)) {
+      result[styles.maybe] = true;
     }
     return result;
   };
