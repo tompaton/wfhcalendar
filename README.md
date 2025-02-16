@@ -11,21 +11,15 @@ Uses local storage, so no account is required and nothing is sent to any servers
 - selection to change financial year system
 - printable layout
 - support multiple types of leave, work (for different office locations etc.)
-- add a description/help to the page
-- add footer link to tompaton.com
 - deploy to tompaton.com
+- push to github
 - export data (to csv)
 - backup/restore data (json)
 - show date/number of days since last exported/backed up
 - sync between devices
 - mode to set all unset days to defaults (M/F -> home etc.)
 - keyboard control (arrows, w/h/l keys to select)
-
-## Help
-
-- click to cycle locations for the day
-- ctrl+click to set to same as last work location
-- shift+click to toggle "maybe" location for the day
+- add notes to a day
 
 ## Usage
 

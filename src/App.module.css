@@ -1,19 +1,33 @@
 .App {
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
 .header {
   background-color: #282c34;
-  min-height: 10vh;
-  display: flex;
-  flex-direction: column;
-  align-items: left;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+  font-size: 1.25em;
   color: #bac5d5;
   top: 0;
   position: sticky;
   z-index: 3;
+}
+
+.footer {
+  background-color: #bac5d5;
+  color: #282c34;
+  bottom: 0;
+  position: sticky;
+  z-index: 3;
+}
+
+.footer a {
+  color: #282c34;
+}
+
+.content {
+  flex-grow: 1;
 }
 
 .yearSelector {
@@ -97,36 +111,39 @@ td::after {
   z-index: 1;
 }
 
-td.day.work {
+.calendar tbody td.day.work {
   background-color: #d59a2e;
+  border-color: #b28633;
 }
 
-td.day.work.maybe {
-  background: linear-gradient(to right bottom, #d59a2e 50%, white 50%);
+.calendar tbody td.day.work.maybe {
+  background: linear-gradient(to right bottom, #d59a2e 50%, #d59a2e66 50%);
 }
 
 td.work::after {
   content: "W";
 }
 
-td.day.home {
+.calendar tbody td.day.home {
   background-color: #c18dc1;
+  border-color: #9e7e9e;
 }
 
-td.day.home.maybe {
-  background: linear-gradient(to right bottom, #c18dc1 50%, white 50%);
+.calendar tbody td.day.home.maybe {
+  background: linear-gradient(to right bottom, #c18dc1 50%, #c18dc166 50%);
 }
 
 td.home::after {
   content: "H";
 }
 
-td.day.leave {
+.calendar tbody td.day.leave {
   background-color: #a5cea5;
+  border-color: #8daa8d;
 }
 
-td.day.leave.maybe {
-  background: linear-gradient(to right bottom, #a5cea5 50%, white 50%);
+.calendar tbody td.day.leave.maybe {
+  background: linear-gradient(to right bottom, #a5cea5 50%, #a5cea566 50%);
 }
 
 td.leave::after {

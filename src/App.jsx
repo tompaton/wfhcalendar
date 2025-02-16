@@ -87,12 +87,22 @@ function App() {
         <h1>WFH Calendar</h1>
         <YearSelector />
       </header>
-      <Show when={state.render_mode === 'mobile'}>
-        <MobileCalendar year={state.year} />
-      </Show>
-      <Show when={state.render_mode !== 'mobile'}>
-        <DesktopCalendar year={state.year} />
-      </Show>
+      <div class={styles.content}>
+        <Show when={state.render_mode === 'mobile'}>
+          <MobileCalendar year={state.year} />
+        </Show>
+        <Show when={state.render_mode !== 'mobile'}>
+          <DesktopCalendar year={state.year} />
+        </Show>
+      </div>
+      <footer class={styles.footer}>
+        <p>
+          Click on a day to cycle through work, home, leave, or blank.
+          Shift-click to toggle "maybe".
+          Ctrl-click to repeat last selection.
+        </p>
+        <p>&copy; 2025 <a href="https://tompaton.com">tompaton.com</a></p>
+      </footer>
     </div>
   );
 }
