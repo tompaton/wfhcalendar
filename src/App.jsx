@@ -7,6 +7,7 @@ const [state, setState] = createStore({
   years: {}, // { year: { month: { day: 'work'|'home'|'leave' } } }
   maybe: {}, // { year: { month: { day: true|false } } }
   last_loc: 'work',
+  target: 60.0,
   render_mode: 'mobile'
 });
 
@@ -94,6 +95,7 @@ function App() {
         <Show when={state.render_mode !== 'mobile'}>
           <DesktopCalendar year={state.year} />
         </Show>
+        <Target year={state.year} />
       </div>
       <footer class={styles.footer}>
         <p>
@@ -315,6 +317,53 @@ function MonthTotals2(props) {
       </thead>
       <tbody>
         <MonthTotals year={props.year} month={props.month} />
+      </tbody>
+    </table>
+  );
+}
+
+function Target(props) {
+  const total_work = () => getCumulativeMonthTotal(props.year, 11, 'work');
+  const total_home = () => getCumulativeMonthTotal(props.year, 11, 'home');
+
+  const target_work = () => Math.ceil(state.target / 100 * (total_work() + total_home()));
+  const target_home = () => total_work() + total_home() - target_work();
+
+  const required_work = () => target_work() - total_work();
+  const required_home = () => target_home() - total_home();
+
+  return (
+    <table class={styles.target}>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Target</th>
+          <th>Actual</th>
+          <th>Required</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th>Percentage</th>
+          <td>
+            <input type="number" min={0} max={100} value={state.target}
+              onInput={(event) => setState('target', +event.target.value)} />
+          </td>
+          <td>{getCumulativeMonthTotalPercent(props.year, 11, 'work', 'work', 'home')}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <th>Work</th>
+          <td>{target_work()}</td>
+          <td>{total_work()}</td>
+          <td>{required_work()}</td>
+        </tr>
+        <tr>
+          <th>Home</th>
+          <td>{target_home()}</td>
+          <td>{total_home()}</td>
+          <td>{required_home()}</td>
+        </tr>
       </tbody>
     </table>
   );

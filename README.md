@@ -8,7 +8,10 @@ Uses local storage, so no account is required and nothing is sent to any servers
 
 - popup menu to choose between work location
 - financial year totals (jul-jun)
-- selection to change financial year system
+- selection to change financial year system (AU/US/UK/...)
+- selection to choose period to total
+- dim totals for future months
+- highlight final year total
 - printable layout
 - support multiple types of leave, work (for different office locations etc.)
 - deploy to tompaton.com
@@ -20,6 +23,8 @@ Uses local storage, so no account is required and nothing is sent to any servers
 - mode to set all unset days to defaults (M/F -> home etc.)
 - keyboard control (arrows, w/h/l keys to select)
 - add notes to a day
+- find and highlight max days between leave
+- auto-populate public holidays (from an api?)
 
 ## Usage
 

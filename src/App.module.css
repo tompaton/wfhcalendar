@@ -149,3 +149,30 @@ td.home::after {
 td.leave::after {
   content: "L";
 }
+
+table.target {
+  margin: 2em auto;
+}
+
+table.target th {
+  text-align: right;
+  font-weight: normal;
+  font-size: 0.75em;
+}
+
+table.target thead th {
+  padding-right: 2.6em;
+}
+
+table.target td {
+  text-align: right;
+  padding-right: 2em;
+}
+
+table.target input {
+  text-align: right;
+  border: none;
+  background: transparent;
+  font-size: 1em;
+  margin-right: -1.2em;
+}
