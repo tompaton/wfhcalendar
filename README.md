@@ -6,7 +6,6 @@ Uses local storage, so no account is required and nothing is sent to any servers
 
 ## To-Do
 
-- popup menu to choose between work location
 - financial year totals (jul-jun)
 - selection to change financial year system (AU/US/UK/...)
 - selection to choose period to total
@@ -16,14 +15,46 @@ Uses local storage, so no account is required and nothing is sent to any servers
 - support multiple types of leave, work (for different office locations etc.)
 - deploy to tompaton.com
 - push to github
+- sync between devices
+- find and highlight max days between leave
+
+### edit form/toolbar
+
+add a toolbar to edit locations.
+ - date (to/from)
+ - location (work/home/leave/empty)
+ - maybe (yes/no)
+ - [apply]
+
+clicking a day sets the to/from date (to the same value)
+shift+clicking a day sets the to/from date (to the end of a range)
+the location/maybe values are set to the common value.
+
+ctrl+click still works as a format painter (conceptually, sets the to/from date, 
+but doesn't update the location/maybe, then clicks the apply button)
+
+need to highlight selected days
+
+- add notes to a day
+
+### toolbar keyboard mode
+
+- keyboard control
+    - arrows to change date
+    - shift+arrows to select range
+    - w/h/l keys to select location and apply
+
+### toolbar filter mode
+
+- select days of the week that the apply button will affect
+- apply to empty only
+- apply to maybe only
+
+### other toolbar functions
+
 - export data (to csv)
 - backup/restore data (json)
-- show date/number of days since last exported/backed up
-- sync between devices
-- mode to set all unset days to defaults (M/F -> home etc.)
-- keyboard control (arrows, w/h/l keys to select)
-- add notes to a day
-- find and highlight max days between leave
+- show date/number of days since last exported/backed up in footer
 - auto-populate public holidays (from an api?)
 
 ## Usage

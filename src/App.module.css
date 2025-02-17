@@ -176,3 +176,50 @@ table.target input {
   font-size: 1em;
   margin-right: -1.2em;
 }
+
+.toolBar {
+  padding: 0.5em 1em;
+  font-size: 0.75em;
+  background-color: #bac5d5;
+  color: #282c34;
+}
+
+.toolBar label {
+  display: inline-block;
+  border: 1px solid #282c34;
+  border-radius: 5px;
+  padding: 2px;
+  font-size: 0.75em;
+}
+
+.toolBar label[for=loc_radio1] {
+  background-color: whitesmoke;
+  color: #00000080;
+}
+
+.toolBar label[for=loc_radio2] {
+  background-color: #d59a2e;
+  border-color: #b28633;
+  color: #00000080;
+}
+
+.toolBar label[for=loc_radio3] {
+  background-color: #c18dc1;
+  border-color: #9e7e9e;
+  color: #00000080;
+}
+
+.toolBar label[for=loc_radio4] {
+  background-color: #a5cea5;
+  border-color: #8daa8d;
+  color: #00000080;
+}
+
+.toolBar label[for=maybe_checkbox] {
+  background: linear-gradient(to right bottom, silver 50%, whitesmoke 50%);
+  color: #00000080;
+}
+
+.toolBar button {
+  margin-left: 1em;
+}

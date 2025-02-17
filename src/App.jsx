@@ -87,6 +87,7 @@ function App() {
       <header class={styles.header}>
         <h1>WFH Calendar</h1>
         <YearSelector />
+        <ToolBar />
       </header>
       <div class={styles.content}>
         <Show when={state.render_mode === 'mobile'}>
@@ -366,6 +367,27 @@ function Target(props) {
         </tr>
       </tbody>
     </table>
+  );
+}
+
+
+function ToolBar() {
+  return (
+    <div class={styles.toolBar}>
+      <input type="date" />&ndash;
+      <input type="date" />
+      <input type="radio" id="loc_radio1" name="loc_radio" value="" />
+      <label for="loc_radio1">Empty</label>
+      <input type="radio" id="loc_radio2" name="loc_radio" value="work" />
+      <label for="loc_radio2">Work</label>
+      <input type="radio" id="loc_radio3" name="loc_radio" value="home" />
+      <label for="loc_radio3">Home</label>
+      <input type="radio" id="loc_radio4" name="loc_radio" value="leave" />
+      <label for="loc_radio4">Leave</label>
+      <input type="checkbox" id="maybe_checkbox" value="1" />
+      <label for="maybe_checkbox">Maybe</label>
+      <button>Apply</button>
+    </div>
   );
 }
 
