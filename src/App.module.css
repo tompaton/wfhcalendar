@@ -44,6 +44,7 @@
 
 .calendar {
   margin: 2em auto;
+  user-select: none;
 }
 
 .calendar thead th {

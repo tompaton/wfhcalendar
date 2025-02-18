@@ -1,5 +1,5 @@
 import { createStore } from "solid-js/store";
-import { createDeferred, For, Show } from "solid-js";
+import { batch, createDeferred, For, Show } from "solid-js";
 import styles from './App.module.css';
 
 const [state, setState] = createStore({
@@ -7,6 +7,7 @@ const [state, setState] = createStore({
   years: {}, // { year: { month: { day: 'work'|'home'|'leave' } } }
   maybe: {}, // { year: { month: { day: true|false } } }
   last_loc: 'work',
+  toolbar: { 'from_date': null, 'to_date': null, 'loc': null, 'maybe': null },
   target: 60.0,
   render_mode: 'mobile'
 });
@@ -22,10 +23,6 @@ function setDayLoc(year, month, day, loc) {
   setState('last_loc', loc);
 }
 
-function cycleLoc(loc) {
-  return { '': 'work', 'work': 'home', 'home': 'leave', 'leave': '' }[loc];
-}
-
 function getDayMaybe(year, month, day) {
   return !!state.maybe[year]?.[month + 1]?.[day + 1];
 }
@@ -34,16 +31,6 @@ function setDayMaybe(year, month, day, maybe) {
   setState('maybe', year, {});
   setState('maybe', year, month + 1, {});
   setState('maybe', year, month + 1, day + 1, maybe);
-}
-
-function dayClick(event, year, month, day) {
-  event.preventDefault();
-  if (event.shiftKey) {
-    setDayMaybe(year, month, day, !getDayMaybe(year, month, day));
-    return;
-  }
-  const loc = event.ctrlKey ? state.last_loc : cycleLoc(getDayLoc(year, month, day));
-  setDayLoc(year, month, day, loc);
 }
 
 function getMonthTotal(year, month, loc) {
@@ -82,6 +69,11 @@ function App() {
 
   setState('render_mode', window.innerWidth < 1200 ? 'mobile' : 'desktop');
 
+  const today = new Date();
+  populateToolbar(
+    { preventDefault: () => { } },
+    today.getFullYear(), today.getMonth(), today.getDate() - 1);
+
   return (
     <div class={styles.App}>
       <header class={styles.header}>
@@ -100,8 +92,9 @@ function App() {
       </div>
       <footer class={styles.footer}>
         <p>
-          Click on a day to cycle through work, home, leave, or blank.
-          Shift-click to toggle "maybe".
+          Click on a day to select.
+          Shift-click to select a range of days.
+          Choose work location and click Apply button.
           Ctrl-click to repeat last selection.
         </p>
         <p>&copy; 2025 <a href="https://tompaton.com">tompaton.com</a></p>
@@ -277,7 +270,7 @@ function Day(props) {
     return result;
   };
   return (
-    <td classList={dayClass()} onclick={(event) => dayClick(event, props.year, props.month, props.day)}>
+    <td classList={dayClass()} onclick={(event) => populateToolbar(event, props.year, props.month, props.day)}>
       <span class={styles.dayNum}>{props.day + 1}</span>
     </td>
   );
@@ -374,21 +367,150 @@ function Target(props) {
 function ToolBar() {
   return (
     <div class={styles.toolBar}>
-      <input type="date" />&ndash;
-      <input type="date" />
-      <input type="radio" id="loc_radio1" name="loc_radio" value="" />
+      <input type="date" name="from_date" value={state.toolbar.from_date}
+        oninput={onToolbarDateChange} />
+      &ndash;
+      <input type="date" name="to_date" value={state.toolbar.to_date}
+        oninput={onToolbarDateChange} />
+      <input type="radio" name="loc_radio" id="loc_radio1"
+        value="" checked={state.toolbar.loc === ""}
+        onchange={() => setState('toolbar', 'loc', '')} />
       <label for="loc_radio1">Empty</label>
-      <input type="radio" id="loc_radio2" name="loc_radio" value="work" />
+      <input type="radio" name="loc_radio" id="loc_radio2"
+        value="work" checked={state.toolbar.loc === "work"}
+        onchange={() => setState('toolbar', 'loc', 'work')} />
       <label for="loc_radio2">Work</label>
-      <input type="radio" id="loc_radio3" name="loc_radio" value="home" />
+      <input type="radio" name="loc_radio" id="loc_radio3"
+        value="home" checked={state.toolbar.loc === "home"}
+        onchange={() => setState('toolbar', 'loc', 'home')} />
       <label for="loc_radio3">Home</label>
-      <input type="radio" id="loc_radio4" name="loc_radio" value="leave" />
+      <input type="radio" name="loc_radio" id="loc_radio4"
+        value="leave" checked={state.toolbar.loc === "leave"}
+        onchange={() => setState('toolbar', 'loc', 'leave')} />
       <label for="loc_radio4">Leave</label>
-      <input type="checkbox" id="maybe_checkbox" value="1" />
+      <input type="checkbox" id="maybe_checkbox" value="1"
+        checked={state.toolbar.maybe}
+        onchange={(event) => setState('toolbar', 'maybe', event.target.checked)} />
       <label for="maybe_checkbox">Maybe</label>
-      <button>Apply</button>
+      <button onclick={applyToolbar}>Apply</button>
     </div>
   );
+}
+
+function onToolbarDateChange(event) {
+  setState('toolbar', event.target.name, event.target.value);
+
+  if (state.toolbar.from_date > state.toolbar.to_date) {
+    setState('toolbar', {
+      'to_date': state.toolbar.from_date,
+      'from_date': state.toolbar.to_date
+    });
+  }
+}
+
+function populateToolbar(event, year, month, day) {
+  event.preventDefault();
+
+  const date = new Date(year, month, day + 2);
+  const iso_date = date.toISOString().slice(0, 10);
+
+  if (event.ctrlKey) {
+    // set date
+    setState('toolbar', 'from_date', iso_date);
+    setState('toolbar', 'to_date', iso_date);
+
+    // apply current loc/maybe (format painter)
+    setDayLoc(year, month, day, state.toolbar.loc);
+    setDayMaybe(year, month, day, state.toolbar.maybe);
+
+  } else if (event.shiftKey) {
+    if (iso_date === state.toolbar.from_date || iso_date === state.toolbar.to_date) {
+      // back to a single date
+      setState('toolbar', 'from_date', iso_date);
+      setState('toolbar', 'to_date', iso_date);
+    } else if (iso_date > state.toolbar.from_date && iso_date < state.toolbar.to_date) {
+      // shrink selection
+      const mid_date = new Date(
+        (new Date(state.toolbar.from_date).getTime()
+          + new Date(state.toolbar.to_date).getTime()) / 2);
+
+      if (date > mid_date)
+        setState('toolbar', 'to_date', iso_date);
+      else
+        setState('toolbar', 'from_date', iso_date);
+    } else {
+      // extend selection
+      setState('toolbar', 'from_date', min_date(state.toolbar.from_date, iso_date));
+      setState('toolbar', 'to_date', max_date(state.toolbar.to_date, iso_date));
+    }
+
+    // pick up current loc/maybe if all the same
+    const from_date = new Date(state.toolbar.from_date);
+    const to_date = new Date(state.toolbar.to_date);
+    setState('toolbar', 'loc', getRangeLoc(from_date, to_date));
+    setState('toolbar', 'maybe', getRangeMaybe(from_date, to_date));
+
+  } else {
+    // single day
+    setState('toolbar', 'from_date', iso_date);
+    setState('toolbar', 'to_date', iso_date);
+
+    // pick up current loc/maybe
+    setState('toolbar', 'loc', getDayLoc(year, month, day));
+    setState('toolbar', 'maybe', getDayMaybe(year, month, day));
+  }
+}
+
+function applyToolbar(event) {
+  event.preventDefault();
+
+  batch(() => {
+    const from_date = new Date(state.toolbar.from_date);
+    const to_date = new Date(state.toolbar.to_date);
+
+    for (let date = from_date; date <= to_date; date.setDate(date.getDate() + 1)) {
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const day = date.getDate() - 1;
+
+      if (state.toolbar.loc !== null)
+        setDayLoc(year, month, day, state.toolbar.loc);
+      if (state.toolbar.maybe !== null)
+        setDayMaybe(year, month, day, state.toolbar.maybe);
+    }
+  });
+}
+
+function getRangeLoc(from_date, to_date) {
+  const loc = getDayLoc(from_date.getFullYear(), from_date.getMonth(), from_date.getDate() - 1);
+  for (let date = from_date; date <= to_date; date.setDate(date.getDate() + 1)) {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const day = date.getDate() - 1;
+    if (loc !== getDayLoc(year, month, day))
+      return null;
+  }
+  return loc;
+}
+
+function getRangeMaybe(from_date, to_date) {
+  const maybe = getDayMaybe(from_date.getFullYear(), from_date.getMonth(), from_date.getDate() - 1);
+  for (let date = from_date; date <= to_date; date.setDate(date.getDate() + 1)) {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const day = date.getDate() - 1;
+    if (maybe !== getDayMaybe(year, month, day))
+      return null;
+  }
+  return maybe;
+}
+
+function min_date(date1, date2) {
+  return date1 < date2 ? date1 : date2;
+}
+
+function max_date(date1, date2) {
+  return date1 > date2 ? date1 : date2;
 }
 
 export default App;

@@ -20,19 +20,6 @@ Uses local storage, so no account is required and nothing is sent to any servers
 
 ### edit form/toolbar
 
-add a toolbar to edit locations.
- - date (to/from)
- - location (work/home/leave/empty)
- - maybe (yes/no)
- - [apply]
-
-clicking a day sets the to/from date (to the same value)
-shift+clicking a day sets the to/from date (to the end of a range)
-the location/maybe values are set to the common value.
-
-ctrl+click still works as a format painter (conceptually, sets the to/from date, 
-but doesn't update the location/maybe, then clicks the apply button)
-
 need to highlight selected days
 
 - add notes to a day
