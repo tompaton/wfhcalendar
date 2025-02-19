@@ -255,6 +255,8 @@ function Day(props) {
   const date = () => new Date(props.year, props.month, props.day + 1);
   const dayName = () => date().toLocaleString('default', { weekday: 'short' })[0];
   const weekday = () => dayName() !== 'S';
+  const iso_date = () => new Date(props.year, props.month, props.day + 2).toISOString().slice(0, 10);
+  const isDaySelected = () => state.toolbar.from_date <= iso_date() && iso_date() <= state.toolbar.to_date;
   const dayClass = () => {
     const result = { [styles.day]: weekday() };
     const loc = getDayLoc(props.year, props.month, props.day)
@@ -267,8 +269,13 @@ function Day(props) {
     if (getDayMaybe(props.year, props.month, props.day)) {
       result[styles.maybe] = true;
     }
+    if (isDaySelected()) {
+      result[styles.selection] = true;
+    }
+
     return result;
   };
+
   return (
     <td classList={dayClass()} onclick={(event) => populateToolbar(event, props.year, props.month, props.day)}>
       <span class={styles.dayNum}>{props.day + 1}</span>
