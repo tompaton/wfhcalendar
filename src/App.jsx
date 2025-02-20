@@ -252,33 +252,37 @@ function Blanks(props) {
 }
 
 function Day(props) {
-  const date = () => new Date(props.year, props.month, props.day + 1);
-  const dayName = () => date().toLocaleString('default', { weekday: 'short' })[0];
-  const weekday = () => dayName() !== 'S';
-  const iso_date = () => new Date(props.year, props.month, props.day + 2).toISOString().slice(0, 10);
-  const isDaySelected = () => state.toolbar.from_date <= iso_date() && iso_date() <= state.toolbar.to_date;
-  const dayClass = () => {
-    const result = { [styles.day]: weekday() };
-    const loc = getDayLoc(props.year, props.month, props.day)
+
+  const tdClass = () => {
+    const date = new Date(props.year, props.month, props.day + 1);
+    const dayName = date.toLocaleString('default', { weekday: 'short' })[0];
+    const weekday = dayName !== 'S';
+    const iso_date = new Date(props.year, props.month, props.day + 2).toISOString().slice(0, 10);
+    const result = {
+      [styles.day]: true,
+      [styles.weekday]: weekday,
+      [styles.current]:
+        new Date().getDate() === props.day + 1
+        && new Date().getMonth() === props.month
+        && new Date().getFullYear() === props.year,
+      [styles.selection]:
+        state.toolbar.from_date <= iso_date
+        && iso_date <= state.toolbar.to_date,
+      [styles.maybe]: getDayMaybe(props.year, props.month, props.day)
+    };
+    const loc = getDayLoc(props.year, props.month, props.day);
     if (loc) {
       result[styles[loc]] = true;
     }
-    if (new Date().getDate() === props.day + 1 && new Date().getMonth() === props.month && new Date().getFullYear() === props.year) {
-      result[styles.current] = true;
-    }
-    if (getDayMaybe(props.year, props.month, props.day)) {
-      result[styles.maybe] = true;
-    }
-    if (isDaySelected()) {
-      result[styles.selection] = true;
-    }
-
     return result;
   };
 
   return (
-    <td classList={dayClass()} onclick={(event) => populateToolbar(event, props.year, props.month, props.day)}>
-      <span class={styles.dayNum}>{props.day + 1}</span>
+    <td classList={tdClass()} onclick={(event) => populateToolbar(event, props.year, props.month, props.day)}>
+      <div class={styles.day}>
+        <span class={styles.dayNum}>{props.day + 1}</span>
+        <span class={styles.dayLoc}>{(getDayLoc(props.year, props.month, props.day) + ' ')[0].toUpperCase()}</span>
+      </div>
     </td>
   );
 }

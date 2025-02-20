@@ -20,9 +20,9 @@ Uses local storage, so no account is required and nothing is sent to any servers
 
 ### edit form/toolbar
 
-need to highlight selected days
-
 - add notes to a day
+
+- date input should be clipped to the current year
 
 ### toolbar keyboard mode
 
