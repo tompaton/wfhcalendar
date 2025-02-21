@@ -74,6 +74,14 @@ function App() {
     { preventDefault: () => { } },
     today.getFullYear(), today.getMonth(), today.getDate() - 1);
 
+  // capture and remove previous event listener if any, otherwise vite will keep
+  // adding new ones each time the code is reloaded
+  if (document.wfhkeydowneventlistener !== undefined) {
+    document.removeEventListener('keydown', document.wfhkeydowneventlistener);
+  }
+  document.addEventListener('keydown', handleKeydown);
+  document.wfhkeydowneventlistener = handleKeydown;
+
   return (
     <div class={styles.App}>
       <header class={styles.header}>
@@ -96,6 +104,8 @@ function App() {
           Shift-click to select a range of days.
           Choose work location and click Apply button.
           Ctrl-click to repeat last selection.
+          <br />
+          Keyboard shortcuts: Arrow keys and w, W, h, H, l, L, space.
         </p>
         <p>&copy; 2025 <a href="https://tompaton.com">tompaton.com</a></p>
       </footer>
@@ -455,11 +465,7 @@ function populateToolbar(event, year, month, day) {
       setState('toolbar', 'to_date', max_date(state.toolbar.to_date, iso_date));
     }
 
-    // pick up current loc/maybe if all the same
-    const from_date = new Date(state.toolbar.from_date);
-    const to_date = new Date(state.toolbar.to_date);
-    setState('toolbar', 'loc', getRangeLoc(from_date, to_date));
-    setState('toolbar', 'maybe', getRangeMaybe(from_date, to_date));
+    pickupRange();
 
   } else {
     // single day
@@ -470,6 +476,14 @@ function populateToolbar(event, year, month, day) {
     setState('toolbar', 'loc', getDayLoc(year, month, day));
     setState('toolbar', 'maybe', getDayMaybe(year, month, day));
   }
+}
+
+function pickupRange() {
+  // pick up current loc/maybe if all the same
+  const from_date = new Date(state.toolbar.from_date);
+  const to_date = new Date(state.toolbar.to_date);
+  setState('toolbar', 'loc', getRangeLoc(from_date, to_date));
+  setState('toolbar', 'maybe', getRangeMaybe(from_date, to_date));
 }
 
 function applyToolbar(event) {
@@ -522,6 +536,99 @@ function min_date(date1, date2) {
 
 function max_date(date1, date2) {
   return date1 > date2 ? date1 : date2;
+}
+
+function handleKeydown(event) {
+  switch (event.key) {
+    case 'ArrowLeft': {
+      event.preventDefault();
+      const iso_date = moveIsoDate(state.toolbar.from_date, 0, -1);
+      setState('toolbar', 'from_date', iso_date);
+      if (!event.shiftKey) {
+        setState('toolbar', 'to_date', iso_date);
+      }
+      pickupRange();
+      break;
+    }
+    case 'ArrowRight': {
+      event.preventDefault();
+      const iso_date = moveIsoDate(state.toolbar.to_date, 0, +1);
+      setState('toolbar', 'to_date', iso_date);
+      if (!event.shiftKey) {
+        setState('toolbar', 'from_date', iso_date);
+      }
+      pickupRange();
+      break;
+    }
+    case 'ArrowUp': {
+      event.preventDefault();
+      const iso_date = moveIsoDate(state.toolbar.from_date, -1, 0);
+      setState('toolbar', 'from_date', iso_date);
+      if (!event.shiftKey) {
+        setState('toolbar', 'to_date', iso_date);
+      }
+      pickupRange();
+      break;
+    }
+    case 'ArrowDown': {
+      event.preventDefault();
+      const iso_date = moveIsoDate(state.toolbar.to_date, +1, 0);
+      setState('toolbar', 'to_date', iso_date);
+      if (!event.shiftKey) {
+        setState('toolbar', 'from_date', iso_date);
+      }
+      pickupRange();
+      break;
+    }
+    case ' ':
+      setState('toolbar', { 'loc': '', 'maybe': false });
+      applyToolbar(event)
+      break;
+    case 'w':
+      setState('toolbar', { 'loc': 'work', 'maybe': false });
+      applyToolbar(event)
+      break;
+    case 'W':
+      setState('toolbar', { 'loc': 'work', 'maybe': true });
+      applyToolbar(event)
+      break;
+    case 'h':
+      setState('toolbar', { 'loc': 'home', 'maybe': false });
+      applyToolbar(event)
+      break;
+    case 'H':
+      setState('toolbar', { 'loc': 'home', 'maybe': true });
+      applyToolbar(event)
+      break;
+    case 'l':
+      setState('toolbar', { 'loc': 'leave', 'maybe': false });
+      applyToolbar(event)
+      break;
+    case 'L':
+      setState('toolbar', { 'loc': 'leave', 'maybe': true });
+      applyToolbar(event)
+      break;
+  }
+};
+
+function moveIsoDate(iso_date, month_delta, day_delta) {
+  const date = new Date(iso_date);
+  const year = date.getFullYear();
+  const month1 = date.getMonth();
+  const month2 = Math.max(0, Math.min(month1 + month_delta, 11));
+  const day1 = date.getDate();
+  const offset = monthRowOffset(year, month1, month2);
+  const day2 = day1 + day_delta + offset;
+  const daysinmonth2 = new Date(year, month2 + 1, 0).getDate();
+  const day2a = Math.max(1, Math.min(day2, daysinmonth2));
+  const date2 = new Date(year, month2, day2a + 1);
+  return date2.toISOString().slice(0, 10);
+}
+
+function monthRowOffset(year, month1, month2) {
+  const date1 = new Date(year, month1, 0);
+  const date2 = new Date(year, month2, 0);
+  return (date1.getDay() + 1) % 7 - (date2.getDay() + 1) % 7;
 }
 
 export default App;

@@ -26,10 +26,8 @@ Uses local storage, so no account is required and nothing is sent to any servers
 
 ### toolbar keyboard mode
 
-- keyboard control
-    - arrows to change date
-    - shift+arrows to select range
-    - w/h/l keys to select location and apply
+- Home/End - first/last of month
+- PgUp/PgDn - prev/next year
 
 ### toolbar filter mode
 
