@@ -3,7 +3,7 @@ import { batch, createDeferred, For, Show } from "solid-js";
 import styles from './App.module.css';
 
 const [state, setState] = createStore({
-  year: 2025,
+  year: new Date().getFullYear(),
   years: {}, // { year: { month: { day: 'work'|'home'|'leave' } } }
   maybe: {}, // { year: { month: { day: true|false } } }
   last_loc: 'work',
@@ -13,45 +13,50 @@ const [state, setState] = createStore({
 });
 
 function getDayLoc(year, month, day) {
-  return state.years[year]?.[month + 1]?.[day + 1] || '';
+  return state.years[year]?.[month]?.[day] || '';
 }
 
 function setDayLoc(year, month, day, loc) {
   setState('years', year, {});
-  setState('years', year, month + 1, {});
-  setState('years', year, month + 1, day + 1, loc);
+  setState('years', year, month, {});
+  setState('years', year, month, day, loc);
   setState('last_loc', loc);
 }
 
 function getDayMaybe(year, month, day) {
-  return !!state.maybe[year]?.[month + 1]?.[day + 1];
+  return !!state.maybe[year]?.[month]?.[day];
 }
 
 function setDayMaybe(year, month, day, maybe) {
   setState('maybe', year, {});
-  setState('maybe', year, month + 1, {});
-  setState('maybe', year, month + 1, day + 1, maybe);
+  setState('maybe', year, month, {});
+  setState('maybe', year, month, day, maybe);
+}
+
+function getRange(get_day_value, from_date, to_date) {
+  const value = get_day_value(...getYearMonthDate(from_date));
+  for (let date = new Date(from_date.getTime()); date <= to_date; date.setUTCDate(date.getUTCDate() + 1)) {
+    if (value !== get_day_value(...getYearMonthDate(date)))
+      return null;
+  }
+  return value;
 }
 
 function getMonthTotal(year, month, loc) {
-  return Object.values(state.years[year]?.[month + 1] || {})
+  return Object.values(state.years[year]?.[month] || {})
     .filter((loc_) => loc_ === loc).length;
 }
 
 function getCumulativeMonthTotal(year, month, loc) {
   if (getMonthTotal(year, month, loc) === 0) return 0;
   // sum getMonthTotal for all months
-  return [...Array(month + 1).keys()].reduce((acc, month) => acc + getMonthTotal(year, month, loc), 0);
+  return [...Array(month + 1).keys()].reduce((acc, month) => acc + getMonthTotal(year, month + 1, loc), 0);
 }
 
 function getCumulativeMonthTotalPercent() {
   const [year, month, loc, ...locs] = arguments;
   const total = locs.reduce((acc, loc_) => acc + getCumulativeMonthTotal(year, month, loc_), 0);
   return total ? (getCumulativeMonthTotal(year, month, loc) / total * 100).toFixed(1) : '';
-}
-
-function monthName(month) {
-  return new Date(2025, month, 1).toLocaleString('default', { month: 'long' });
 }
 
 function initSave() {
@@ -72,7 +77,7 @@ function App() {
   const today = new Date();
   populateToolbar(
     { preventDefault: () => { } },
-    today.getFullYear(), today.getMonth(), today.getDate() - 1);
+    ...getYearMonthDate(today));
 
   // capture and remove previous event listener if any, otherwise vite will keep
   // adding new ones each time the code is reloaded
@@ -132,7 +137,7 @@ function DesktopCalendar(props) {
       </thead>
       <tbody>
         <For each={[...Array(12).keys()]}>{(month) => (
-          <Month year={props.year} month={month} />
+          <Month year={props.year} month={month + 1} />
         )}</For>
       </tbody>
     </table>
@@ -143,21 +148,21 @@ function MobileCalendar(props) {
   return (
     <For each={[...Array(12).keys()]}>{(month) => (
       <>
-        <h3>{monthName(month)}</h3>
+        <h3>{monthName(month + 1)}</h3>
         <table class={styles.calendar}>
           <thead>
             <Headers2 />
           </thead>
           <tbody>
-            <MonthWeek year={props.year} month={month} week={1} />
-            <MonthWeek year={props.year} month={month} week={2} />
-            <MonthWeek year={props.year} month={month} week={3} />
-            <MonthWeek year={props.year} month={month} week={4} />
-            <MonthWeek year={props.year} month={month} week={5} />
-            <MonthWeek year={props.year} month={month} week={6} />
+            <MonthWeek year={props.year} month={month + 1} week={1} />
+            <MonthWeek year={props.year} month={month + 1} week={2} />
+            <MonthWeek year={props.year} month={month + 1} week={3} />
+            <MonthWeek year={props.year} month={month + 1} week={4} />
+            <MonthWeek year={props.year} month={month + 1} week={5} />
+            <MonthWeek year={props.year} month={month + 1} week={6} />
           </tbody>
         </table>
-        <MonthTotals2 year={props.year} month={month} />
+        <MonthTotals2 year={props.year} month={month + 1} />
       </>
     )}</For>
   );
@@ -212,19 +217,18 @@ function Headers2() {
 }
 
 function Month(props) {
-  const first = () => new Date(props.year, props.month, 1);
+  const first = () => newDateYMD(props.year, props.month, 1);
   const leading_blanks = () => first().getDay();
-  const daysInMonth = () => new Date(props.year, props.month + 1, 0).getDate();
-  const trailing_blanks = () => 6 * 7 - daysInMonth() - leading_blanks();
-  const currentMonth = () => new Date().getMonth() === props.month && new Date().getFullYear() === props.year;
+  const trailing_blanks = () => 6 * 7 - daysInMonth(props.year, props.month) - leading_blanks();
 
   return (
-    <tr classList={{ [styles.current]: currentMonth() }}>
+    <tr classList={{ [styles.current]: isThisMonth(props.year, props.month) }}>
       <th>{monthName(props.month)}</th>
       <Blanks count={leading_blanks()} />
-      <For each={[...Array(daysInMonth()).keys()]}>{(day) => (
-        <Day year={props.year} month={props.month} day={day} />
-      )}</For>
+      <For each={[...Array(daysInMonth(props.year, props.month)).keys()]}>{
+        (day) => (
+          <Day year={props.year} month={props.month} day={day + 1} />
+        )}</For>
       <Blanks count={trailing_blanks()} />
       <MonthTotals year={props.year} month={props.month} />
     </tr>
@@ -232,21 +236,19 @@ function Month(props) {
 }
 
 function MonthWeek(props) {
-  const first = () => new Date(props.year, props.month, 1);
+  const first = () => newDateYMD(props.year, props.month, 1);
   const leading_blanks = () => first().getDay();
-  const daysInMonth = () => new Date(props.year, props.month + 1, 0).getDate();
   const trailing_blanks = () => {
-    if (props.week == 6) return Math.min(7, 6 * 7 - daysInMonth() - leading_blanks());
-    if (props.week == 5) return Math.max(0, 6 * 7 - daysInMonth() - leading_blanks() - 7);
+    if (props.week == 6) return Math.min(7, 6 * 7 - daysInMonth(props.year, props.month) - leading_blanks());
+    if (props.week == 5) return Math.max(0, 6 * 7 - daysInMonth(props.year, props.month) - leading_blanks() - 7);
     return 0;
   }
-  const currentMonth = () => new Date().getMonth() === props.month && new Date().getFullYear() === props.year;
-  const weekDays = () => [...Array(daysInMonth()).keys()].slice(Math.max(0, (props.week - 1) * 7 - leading_blanks()), props.week * 7 - leading_blanks());
+  const weekDays = () => [...Array(daysInMonth(props.year, props.month)).keys()].slice(Math.max(0, (props.week - 1) * 7 - leading_blanks()), props.week * 7 - leading_blanks());
   return (
-    <tr classList={{ [styles.current]: currentMonth() }}>
+    <tr classList={{ [styles.current]: isThisMonth(props.year, props.month) }}>
       <Blanks count={props.week == 1 ? leading_blanks() : 0} />
       <For each={weekDays()}>{(day) => (
-        <Day year={props.year} month={props.month} day={day} />
+        <Day year={props.year} month={props.month} day={day + 1} />
       )}</For>
       <Blanks count={trailing_blanks()} />
     </tr>
@@ -264,17 +266,15 @@ function Blanks(props) {
 function Day(props) {
 
   const tdClass = () => {
-    const date = new Date(props.year, props.month, props.day + 1);
+    const date = newDateYMD(props.year, props.month, props.day);
     const dayName = date.toLocaleString('default', { weekday: 'short' })[0];
     const weekday = dayName !== 'S';
-    const iso_date = new Date(props.year, props.month, props.day + 2).toISOString().slice(0, 10);
+    const iso_date = date.toISOString().slice(0, 10);
     const result = {
       [styles.day]: true,
       [styles.weekday]: weekday,
       [styles.current]:
-        new Date().getDate() === props.day + 1
-        && new Date().getMonth() === props.month
-        && new Date().getFullYear() === props.year,
+        isToday(props.year, props.month, props.day),
       [styles.selection]:
         state.toolbar.from_date <= iso_date
         && iso_date <= state.toolbar.to_date,
@@ -290,7 +290,7 @@ function Day(props) {
   return (
     <td classList={tdClass()} onclick={(event) => populateToolbar(event, props.year, props.month, props.day)}>
       <div class={styles.day}>
-        <span class={styles.dayNum}>{props.day + 1}</span>
+        <span class={styles.dayNum}>{props.day}</span>
         <span class={styles.dayLoc}>{(getDayLoc(props.year, props.month, props.day) + ' ')[0].toUpperCase()}</span>
       </div>
     </td>
@@ -338,8 +338,8 @@ function MonthTotals2(props) {
 }
 
 function Target(props) {
-  const total_work = () => getCumulativeMonthTotal(props.year, 11, 'work');
-  const total_home = () => getCumulativeMonthTotal(props.year, 11, 'home');
+  const total_work = () => getCumulativeMonthTotal(props.year, 12, 'work');
+  const total_home = () => getCumulativeMonthTotal(props.year, 12, 'home');
 
   const target_work = () => Math.ceil(state.target / 100 * (total_work() + total_home()));
   const target_home = () => total_work() + total_home() - target_work();
@@ -364,7 +364,7 @@ function Target(props) {
             <input type="number" min={0} max={100} value={state.target}
               onInput={(event) => setState('target', +event.target.value)} />
           </td>
-          <td>{getCumulativeMonthTotalPercent(props.year, 11, 'work', 'work', 'home')}</td>
+          <td>{getCumulativeMonthTotalPercent(props.year, 12, 'work', 'work', 'home')}</td>
           <td></td>
         </tr>
         <tr>
@@ -432,7 +432,7 @@ function onToolbarDateChange(event) {
 function populateToolbar(event, year, month, day) {
   event.preventDefault();
 
-  const date = new Date(year, month, day + 2);
+  const date = newDateYMD(year, month, day);
   const iso_date = date.toISOString().slice(0, 10);
 
   if (event.ctrlKey) {
@@ -452,8 +452,8 @@ function populateToolbar(event, year, month, day) {
     } else if (iso_date > state.toolbar.from_date && iso_date < state.toolbar.to_date) {
       // shrink selection
       const mid_date = new Date(
-        (new Date(state.toolbar.from_date).getTime()
-          + new Date(state.toolbar.to_date).getTime()) / 2);
+        (Date.parse(state.toolbar.from_date)
+          + Date.parse(state.toolbar.to_date)) / 2);
 
       if (date > mid_date)
         setState('toolbar', 'to_date', iso_date);
@@ -480,62 +480,27 @@ function populateToolbar(event, year, month, day) {
 
 function pickupRange() {
   // pick up current loc/maybe if all the same
-  const from_date = new Date(state.toolbar.from_date);
-  const to_date = new Date(state.toolbar.to_date);
-  setState('toolbar', 'loc', getRangeLoc(from_date, to_date));
-  setState('toolbar', 'maybe', getRangeMaybe(from_date, to_date));
+  const from_date = newDate(state.toolbar.from_date);
+  const to_date = newDate(state.toolbar.to_date);
+  setState('toolbar', 'loc', getRange(getDayLoc, from_date, to_date));
+  setState('toolbar', 'maybe', getRange(getDayMaybe, from_date, to_date));
 }
 
 function applyToolbar(event) {
   event.preventDefault();
 
   batch(() => {
-    const from_date = new Date(state.toolbar.from_date);
-    const to_date = new Date(state.toolbar.to_date);
+    const from_date = newDate(state.toolbar.from_date);
+    const to_date = newDate(state.toolbar.to_date);
 
-    for (let date = from_date; date <= to_date; date.setDate(date.getDate() + 1)) {
-      const year = date.getFullYear();
-      const month = date.getMonth();
-      const day = date.getDate() - 1;
-
+    for (let date = new Date(from_date.getTime()); date <= to_date; date.setUTCDate(date.getUTCDate() + 1)) {
+      const [year, month, day] = getYearMonthDate(date);
       if (state.toolbar.loc !== null)
         setDayLoc(year, month, day, state.toolbar.loc);
       if (state.toolbar.maybe !== null)
         setDayMaybe(year, month, day, state.toolbar.maybe);
     }
   });
-}
-
-function getRangeLoc(from_date, to_date) {
-  const loc = getDayLoc(from_date.getFullYear(), from_date.getMonth(), from_date.getDate() - 1);
-  for (let date = from_date; date <= to_date; date.setDate(date.getDate() + 1)) {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const day = date.getDate() - 1;
-    if (loc !== getDayLoc(year, month, day))
-      return null;
-  }
-  return loc;
-}
-
-function getRangeMaybe(from_date, to_date) {
-  const maybe = getDayMaybe(from_date.getFullYear(), from_date.getMonth(), from_date.getDate() - 1);
-  for (let date = from_date; date <= to_date; date.setDate(date.getDate() + 1)) {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const day = date.getDate() - 1;
-    if (maybe !== getDayMaybe(year, month, day))
-      return null;
-  }
-  return maybe;
-}
-
-function min_date(date1, date2) {
-  return date1 < date2 ? date1 : date2;
-}
-
-function max_date(date1, date2) {
-  return date1 > date2 ? date1 : date2;
 }
 
 function handleKeydown(event) {
@@ -611,24 +576,67 @@ function handleKeydown(event) {
   }
 };
 
+// DATE FUNCTIONS
+
+function newDateYMD(year, month, day) {
+  // month is 1-12
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+function newDate(iso_date) {
+  return new Date(Date.parse(iso_date));
+}
+
+function getYearMonthDate(date) {
+  // month is 1-12
+  return [
+    date.getFullYear(),
+    date.getUTCMonth() + 1,
+    date.getUTCDate()
+  ];
+}
+
+function isToday(year, month, day) {
+  const [year2, month2, day2] = getYearMonthDate(new Date());
+  return year === year2 && month === month2 && day === day2;
+}
+
+function isThisMonth(year, month) {
+  const [year2, month2, day2] = getYearMonthDate(new Date());
+  return year === year2 && month === month2;
+}
+
+function min_date(date1, date2) {
+  return date1 < date2 ? date1 : date2;
+}
+
+function max_date(date1, date2) {
+  return date1 > date2 ? date1 : date2;
+}
+
+function daysInMonth(year, month) {
+  return newDateYMD(year, month + 1, 0).getDate();
+}
+
+function monthName(month) {
+  return newDateYMD(2025, month, 1).toLocaleString('default', { month: 'long' });
+}
+
 function moveIsoDate(iso_date, month_delta, day_delta) {
-  const date = new Date(iso_date);
-  const year = date.getFullYear();
-  const month1 = date.getMonth();
-  const month2 = Math.max(0, Math.min(month1 + month_delta, 11));
-  const day1 = date.getDate();
+  const date = newDate(iso_date);
+  const [year, month1, day1] = getYearMonthDate(date);
+  const month2 = Math.max(1, Math.min(month1 + month_delta, 12));
   const offset = monthRowOffset(year, month1, month2);
   const day2 = day1 + day_delta + offset;
-  const daysinmonth2 = new Date(year, month2 + 1, 0).getDate();
-  const day2a = Math.max(1, Math.min(day2, daysinmonth2));
-  const date2 = new Date(year, month2, day2a + 1);
+  const day2a = Math.max(1, Math.min(day2, daysInMonth(year, month2)));
+  const date2 = newDateYMD(year, month2, day2a);
   return date2.toISOString().slice(0, 10);
 }
 
 function monthRowOffset(year, month1, month2) {
-  const date1 = new Date(year, month1, 0);
-  const date2 = new Date(year, month2, 0);
-  return (date1.getDay() + 1) % 7 - (date2.getDay() + 1) % 7;
+  const date1 = newDateYMD(year, month1, 1);
+  const date2 = newDateYMD(year, month2, 1);
+  return date1.getUTCDay() - date2.getUTCDay();
 }
 
 export default App;
