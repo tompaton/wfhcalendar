@@ -3,6 +3,8 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+
+  accent-color: navy;
 }
 
 .header {
@@ -12,6 +14,10 @@
   top: 0;
   position: sticky;
   z-index: 3;
+}
+
+.header h1 {
+  margin: 0.25em;
 }
 
 .footer {
@@ -39,6 +45,17 @@
   width: 3em;
   height: 2em;
   vertical-align: text-bottom;
+  margin: 0 1em;
+}
+
+.menu {
+  margin-top: -2em;
+  margin-bottom: 0em;
+  height: 2em;
+  text-align: right;
+}
+
+.menu button {
   margin: 0 1em;
 }
 

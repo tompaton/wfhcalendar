@@ -93,7 +93,9 @@ function App() {
   const today = new Date();
   populateToolbar(
     { preventDefault: () => { } },
-    ...getYearMonthDate(today));
+    today.getFullYear(),
+    today.getMonth() + 1,
+    today.getDate());
 
   // capture and remove previous event listener if any, otherwise vite will keep
   // adding new ones each time the code is reloaded
@@ -108,6 +110,7 @@ function App() {
       <header class={styles.header}>
         <h1>WFH Calendar</h1>
         <YearSelector />
+        <Menu />
         <ToolBar />
       </header>
       <div class={styles.content}>
@@ -126,8 +129,7 @@ function App() {
           Choose work location and click Apply button.
           Ctrl-click to repeat last selection.
           <br />
-          Keyboard shortcuts: Arrow keys and <kbd>w</kbd>, <kbd>W</kbd>,
-          <kbd>h</kbd>, <kbd>H</kbd>, <kbd>l</kbd>, <kbd>L</kbd>, <kbd>space</kbd>.
+          Keyboard shortcuts: Arrow keys and <kbd>w</kbd>, <kbd>W</kbd>, <kbd>h</kbd>, <kbd>H</kbd>, <kbd>l</kbd>, <kbd>L</kbd>, <kbd>space</kbd>.
         </p>
         <p>&copy; 2025 <a href="https://tompaton.com">tompaton.com</a></p>
       </footer>
@@ -142,6 +144,14 @@ function YearSelector() {
       <button title="Previous" onclick={() => setState('year', state.year - 1)}>&lt;</button>
       <span>{state.year}</span>
       <button title="Next" onclick={() => setState('year', state.year + 1)}>&gt;</button>
+    </div>
+  );
+}
+
+function Menu() {
+  return (
+    <div class={styles.menu}>
+      <button onclick={downloadCSV}>Download CSV</button>
     </div>
   );
 }
@@ -726,6 +736,35 @@ function monthRowOffset(year, month1, month2) {
   const date1 = newDateYMD(year, month1, 1);
   const date2 = newDateYMD(year, month2, 1);
   return date1.getUTCDay() - date2.getUTCDay();
+}
+
+function downloadCSV() {
+  const csv_content = tableCSV();
+  const blob = new Blob([csv_content], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'wfhcalendar-' + state.year + '.csv';
+  a.click();
+}
+
+function tableCSV() {
+  const csv = [];
+  const table = document.querySelectorAll('table.' + styles.calendar)[0];
+  for (let row of table.rows) {
+    const csv_row = [];
+    for (let cell of row.cells) {
+      const text = cell.innerText.split('\n');
+      csv_row.push(text[0]);
+      csv_row.push((text[1] || '') + (cell.classList.contains(styles.maybe) ? '?' : ''));
+      for (let i = 1; i < cell.colSpan; i++) {
+        csv_row.push('');
+        csv_row.push('');
+      }
+    }
+    csv.push(csv_row.join(','));
+  }
+  return csv.join('\n');
 }
 
 export default App;

@@ -34,7 +34,6 @@ Uses local storage, so no account is required and nothing is sent to any servers
 
 ### other toolbar functions
 
-- export data (to csv)
 - backup/restore data (json)
 - show date/number of days since last exported/backed up in footer
 - auto-populate public holidays (from an api?)
