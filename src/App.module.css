@@ -230,3 +230,7 @@ table.target input {
 .toolBar button {
   margin-left: 1em;
 }
+
+.toolBar .filter label {
+  border: none;
+}

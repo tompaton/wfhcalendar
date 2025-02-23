@@ -31,9 +31,6 @@ Uses local storage, so no account is required and nothing is sent to any servers
 
 ### toolbar filter mode
 
-- select days of the week that the apply button will affect
-- apply to empty only
-- apply to maybe only
 
 ### other toolbar functions
 

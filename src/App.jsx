@@ -7,7 +7,16 @@ const [state, setState] = createStore({
   years: {}, // { year: { month: { day: 'work'|'home'|'leave' } } }
   maybe: {}, // { year: { month: { day: true|false } } }
   last_loc: 'work',
-  toolbar: { 'from_date': null, 'to_date': null, 'loc': null, 'maybe': null },
+  toolbar: {
+    'from_date': null,
+    'to_date': null,
+    'loc': null,
+    'maybe': null,
+    'filter': {
+      'mode': 'all',
+      'day': [false, true, true, true, true, true, false],
+    },
+  },
   target: 60.0,
   render_mode: 'mobile'
 });
@@ -73,6 +82,13 @@ function App() {
   initSave();
 
   setState('render_mode', window.innerWidth < 1200 ? 'mobile' : 'desktop');
+  setState('toolbar', 'filter', {});
+  if (state.toolbar.filter.mode === undefined) {
+    setState('toolbar', 'filter', 'mode', 'all');
+  }
+  if (state.toolbar.filter.day === undefined) {
+    setState('toolbar', 'filter', 'day', [false, true, true, true, true, true, false]);
+  }
 
   const today = new Date();
   populateToolbar(
@@ -110,7 +126,8 @@ function App() {
           Choose work location and click Apply button.
           Ctrl-click to repeat last selection.
           <br />
-          Keyboard shortcuts: Arrow keys and w, W, h, H, l, L, space.
+          Keyboard shortcuts: Arrow keys and <kbd>w</kbd>, <kbd>W</kbd>,
+          <kbd>h</kbd>, <kbd>H</kbd>, <kbd>l</kbd>, <kbd>L</kbd>, <kbd>space</kbd>.
         </p>
         <p>&copy; 2025 <a href="https://tompaton.com">tompaton.com</a></p>
       </footer>
@@ -414,8 +431,72 @@ function ToolBar() {
         onchange={(event) => setState('toolbar', 'maybe', event.target.checked)} />
       <label for="maybe_checkbox">Maybe</label>
       <button onclick={applyToolbar}>Apply</button>
+
+      <ApplyFilter />
     </div>
   );
+}
+
+function ApplyFilter() {
+  return (
+    <span class={styles.filter}>
+      <input type="radio" name="filter_radio" id="filter_radio1"
+        value="all" checked={state.toolbar.filter?.mode === 'all'}
+        onchange={(event) => setState('toolbar', 'filter', 'mode', event.target.value)} />
+      <label for="filter_radio1">All</label>
+      <input type="radio" name="filter_radio" id="filter_radio2"
+        value="empty" checked={state.toolbar.filter?.mode === 'empty'}
+        onchange={(event) => setState('toolbar', 'filter', 'mode', event.target.value)} />
+      <label for="filter_radio2">Empty only</label>
+      <input type="radio" name="filter_radio" id="filter_radio3"
+        value="maybe" checked={state.toolbar.filter?.mode === 'maybe'}
+        onchange={(event) => setState('toolbar', 'filter', 'mode', event.target.value)} />
+      <label for="filter_radio3">Maybe only</label>
+      <input type="checkbox" id="filter_day0"
+        value="0" checked={state.toolbar.filter?.day?.[0]}
+        onchange={(event) => setState('toolbar', 'filter', 'day', 0, event.target.checked)} />
+      <label for="filter_day0">S</label>
+      <input type="checkbox" id="filter_day1"
+        value="1" checked={state.toolbar.filter?.day?.[1]}
+        onchange={(event) => setState('toolbar', 'filter', 'day', 1, event.target.checked)} />
+      <label for="filter_day1">M</label>
+      <input type="checkbox" id="filter_day2"
+        value="2" checked={state.toolbar.filter?.day?.[2]}
+        onchange={(event) => setState('toolbar', 'filter', 'day', 2, event.target.checked)} />
+      <label for="filter_day2">T</label>
+      <input type="checkbox" id="filter_day3"
+        value="3" checked={state.toolbar.filter?.day?.[3]}
+        onchange={(event) => setState('toolbar', 'filter', 'day', 3, event.target.checked)} />
+      <label for="filter_day3">W</label>
+      <input type="checkbox" id="filter_day4"
+        value="4" checked={state.toolbar.filter?.day?.[4]}
+        onchange={(event) => setState('toolbar', 'filter', 'day', 4, event.target.checked)} />
+      <label for="filter_day4">T</label>
+      <input type="checkbox" id="filter_day5"
+        value="5" checked={state.toolbar.filter?.day?.[5]}
+        onchange={(event) => setState('toolbar', 'filter', 'day', 5, event.target.checked)} />
+      <label for="filter_day5">F</label>
+      <input type="checkbox" id="filter_day6"
+        value="6" checked={state.toolbar.filter?.day?.[6]}
+        onchange={(event) => setState('toolbar', 'filter', 'day', 6, event.target.checked)} />
+      <label for="filter_day6">S</label>
+    </span>
+  );
+}
+
+function passesFilter(weekday, year, month, day) {
+  if (state.toolbar.filter.mode === 'empty'
+    && getDayLoc(year, month, day) !== '')
+    return false;
+
+  if (state.toolbar.filter.mode === 'maybe'
+    && !getDayMaybe(year, month, day))
+    return false;
+
+  if (!state.toolbar.filter.day[weekday])
+    return false;
+
+  return true;
 }
 
 function onToolbarDateChange(event) {
@@ -449,6 +530,9 @@ function populateToolbar(event, year, month, day) {
       // back to a single date
       setState('toolbar', 'from_date', iso_date);
       setState('toolbar', 'to_date', iso_date);
+
+      // no filter if single day selected
+      setState('toolbar', 'filter', 'mode', 'all');
     } else if (iso_date > state.toolbar.from_date && iso_date < state.toolbar.to_date) {
       // shrink selection
       const mid_date = new Date(
@@ -475,6 +559,9 @@ function populateToolbar(event, year, month, day) {
     // pick up current loc/maybe
     setState('toolbar', 'loc', getDayLoc(year, month, day));
     setState('toolbar', 'maybe', getDayMaybe(year, month, day));
+
+    // no filter if single day selected
+    setState('toolbar', 'filter', 'mode', 'all');
   }
 }
 
@@ -495,6 +582,8 @@ function applyToolbar(event) {
 
     for (let date = new Date(from_date.getTime()); date <= to_date; date.setUTCDate(date.getUTCDate() + 1)) {
       const [year, month, day] = getYearMonthDate(date);
+      if (!passesFilter(date.getUTCDay(), year, month, day))
+        continue;
       if (state.toolbar.loc !== null)
         setDayLoc(year, month, day, state.toolbar.loc);
       if (state.toolbar.maybe !== null)
