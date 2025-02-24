@@ -18,7 +18,8 @@ const [state, setState] = createStore({
     },
   },
   target: 60.0,
-  render_mode: 'mobile'
+  render_mode: 'mobile',
+  last_backup: null,
 });
 
 function getDayLoc(year, month, day) {
@@ -149,9 +150,19 @@ function YearSelector() {
 }
 
 function Menu() {
+  const last_backup = () => {
+    if (!state.last_backup) return 'Never backed up!';
+    const date = new Date(state.last_backup);
+    const days_ago = Math.floor((new Date() - date) / (1000 * 60 * 60 * 24));
+    return `Last backup ${date.toISOString().slice(0, 10)} (${days_ago} days ago)`;
+  };
+
   return (
     <div class={styles.menu}>
-      <button onclick={downloadCSV}>Download CSV</button>
+      <button onclick={downloadCSV} title="Download the currently displayed year in CSV format">Download CSV</button>
+      <button onclick={backupJSON} title="Download all data in JSON format as a backup">Backup</button>
+      <span class={styles.backupDate}>{last_backup()}</span>
+      <button onclick={restoreJSON} title="Restore data from a JSON format backup">Restore</button>
     </div>
   );
 }
@@ -740,11 +751,14 @@ function monthRowOffset(year, month1, month2) {
 
 function downloadCSV() {
   const csv_content = tableCSV();
-  const blob = new Blob([csv_content], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
+  downloadContent(csv_content, 'text/csv', 'wfhcalendar-' + state.year + '.csv');
+}
+
+function downloadContent(content, content_type, filename) {
+  const blob = new Blob([content], { type: content_type });
   const a = document.createElement('a');
-  a.href = url;
-  a.download = 'wfhcalendar-' + state.year + '.csv';
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
   a.click();
 }
 
@@ -765,6 +779,40 @@ function tableCSV() {
     csv.push(csv_row.join(','));
   }
   return csv.join('\n');
+}
+
+function backupJSON() {
+  const backup = JSON.parse(JSON.stringify(state));
+  delete backup.year;
+  delete backup.last_loc;
+  delete backup.toolbar;
+  delete backup.render_mode;
+
+  const json_content = JSON.stringify(backup);
+  const timestamp = new Date().toISOString().slice(0, 19).replace(/[-:]/g, '');
+  downloadContent(json_content, 'application/json', 'wfhcalendar-' + timestamp + '.json');
+  setState('last_backup', new Date().toISOString());
+}
+
+function restoreJSON() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/json';
+  input.onchange = (event) => {
+    const file = event.target.files[0];
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const json_content = event.target.result;
+      const backup = JSON.parse(json_content);
+
+      batch(() => {
+        setState({ 'years': undefined, 'maybe': undefined });
+        setState(backup);
+      });
+    };
+    reader.readAsText(file);
+  };
+  input.click();
 }
 
 export default App;
