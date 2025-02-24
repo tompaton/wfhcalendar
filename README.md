@@ -17,24 +17,10 @@ Uses local storage, so no account is required and nothing is sent to any servers
 - push to github
 - sync between devices
 - find and highlight max days between leave
-
-### edit form/toolbar
-
+- auto-populate public holidays (from an api?)
 - add notes to a day
-
 - date input should be clipped to the current year
 
-### toolbar keyboard mode
-
-- Home/End - first/last of month
-- PgUp/PgDn - prev/next year
-
-### toolbar filter mode
-
-
-### other toolbar functions
-
-- auto-populate public holidays (from an api?)
 
 ## Usage
 

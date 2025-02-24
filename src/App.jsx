@@ -92,6 +92,7 @@ function App() {
   }
 
   const today = new Date();
+  setState('year', today.getFullYear());
   populateToolbar(
     { preventDefault: () => { } },
     today.getFullYear(),
@@ -154,7 +155,7 @@ function Menu() {
     if (!state.last_backup) return 'Never backed up!';
     const date = new Date(state.last_backup);
     const days_ago = Math.floor((new Date() - date) / (1000 * 60 * 60 * 24));
-    return `Last backup ${date.toISOString().slice(0, 10)} (${days_ago} days ago)`;
+    return `Last backup ${toIsoDate(date)} (${days_ago} days ago)`;
   };
 
   return (
@@ -307,7 +308,7 @@ function Day(props) {
     const date = newDateYMD(props.year, props.month, props.day);
     const dayName = date.toLocaleString('default', { weekday: 'short' })[0];
     const weekday = dayName !== 'S';
-    const iso_date = date.toISOString().slice(0, 10);
+    const iso_date = toIsoDate(date);
     const result = {
       [styles.day]: true,
       [styles.weekday]: weekday,
@@ -535,7 +536,7 @@ function populateToolbar(event, year, month, day) {
   event.preventDefault();
 
   const date = newDateYMD(year, month, day);
-  const iso_date = date.toISOString().slice(0, 10);
+  const iso_date = toIsoDate(date);
 
   if (event.ctrlKey) {
     // set date
@@ -655,6 +656,56 @@ function handleKeydown(event) {
       pickupRange();
       break;
     }
+    case 'Home': {
+      event.preventDefault();
+      const from_date = newDate(state.toolbar.from_date);
+      const [year, month, date] = getYearMonthDate(from_date);
+      const first = newDateYMD(year, month, 1);
+      const iso_date = toIsoDate(first);
+      setState('toolbar', 'from_date', iso_date);
+      if (!event.shiftKey) {
+        setState('toolbar', 'to_date', iso_date);
+      }
+      pickupRange();
+      break;
+    }
+    case 'End': {
+      event.preventDefault();
+      const to_date = newDate(state.toolbar.to_date);
+      const [year, month, date] = getYearMonthDate(to_date);
+      const last = newDateYMD(year, month + 1, 0);
+      const iso_date = toIsoDate(last);
+      setState('toolbar', 'to_date', iso_date);
+      if (!event.shiftKey) {
+        setState('toolbar', 'from_date', iso_date);
+      }
+      pickupRange();
+      break;
+    }
+    case 'PageUp': {
+      event.preventDefault();
+      setState('year', state.year - 1);
+      const [from_year, from_month, from_day] = getYearMonthDate(newDate(state.toolbar.from_date));
+      const [to_year, to_month, to_day] = getYearMonthDate(newDate(state.toolbar.to_date));
+      const from_date = newDateYMD(state.year, from_month, from_day);
+      const to_date = newDateYMD(state.year, to_month, to_day);
+      setState('toolbar', 'from_date', toIsoDate(from_date));
+      setState('toolbar', 'to_date', toIsoDate(to_date));
+      pickupRange();
+      break;
+    }
+    case 'PageDown': {
+      event.preventDefault();
+      setState('year', state.year + 1);
+      const [from_year, from_month, from_day] = getYearMonthDate(newDate(state.toolbar.from_date));
+      const [to_year, to_month, to_day] = getYearMonthDate(newDate(state.toolbar.to_date));
+      const from_date = newDateYMD(state.year, from_month, from_day);
+      const to_date = newDateYMD(state.year, to_month, to_day);
+      setState('toolbar', 'from_date', toIsoDate(from_date));
+      setState('toolbar', 'to_date', toIsoDate(to_date));
+      pickupRange();
+      break;
+    }
     case ' ':
       setState('toolbar', { 'loc': '', 'maybe': false });
       applyToolbar(event)
@@ -686,68 +737,7 @@ function handleKeydown(event) {
   }
 };
 
-// DATE FUNCTIONS
-
-function newDateYMD(year, month, day) {
-  // month is 1-12
-  return new Date(Date.UTC(year, month - 1, day));
-}
-
-function newDate(iso_date) {
-  return new Date(Date.parse(iso_date));
-}
-
-function getYearMonthDate(date) {
-  // month is 1-12
-  return [
-    date.getFullYear(),
-    date.getUTCMonth() + 1,
-    date.getUTCDate()
-  ];
-}
-
-function isToday(year, month, day) {
-  const [year2, month2, day2] = getYearMonthDate(new Date());
-  return year === year2 && month === month2 && day === day2;
-}
-
-function isThisMonth(year, month) {
-  const [year2, month2, day2] = getYearMonthDate(new Date());
-  return year === year2 && month === month2;
-}
-
-function min_date(date1, date2) {
-  return date1 < date2 ? date1 : date2;
-}
-
-function max_date(date1, date2) {
-  return date1 > date2 ? date1 : date2;
-}
-
-function daysInMonth(year, month) {
-  return newDateYMD(year, month + 1, 0).getDate();
-}
-
-function monthName(month) {
-  return newDateYMD(2025, month, 1).toLocaleString('default', { month: 'long' });
-}
-
-function moveIsoDate(iso_date, month_delta, day_delta) {
-  const date = newDate(iso_date);
-  const [year, month1, day1] = getYearMonthDate(date);
-  const month2 = Math.max(1, Math.min(month1 + month_delta, 12));
-  const offset = monthRowOffset(year, month1, month2);
-  const day2 = day1 + day_delta + offset;
-  const day2a = Math.max(1, Math.min(day2, daysInMonth(year, month2)));
-  const date2 = newDateYMD(year, month2, day2a);
-  return date2.toISOString().slice(0, 10);
-}
-
-function monthRowOffset(year, month1, month2) {
-  const date1 = newDateYMD(year, month1, 1);
-  const date2 = newDateYMD(year, month2, 1);
-  return date1.getUTCDay() - date2.getUTCDay();
-}
+// import/export
 
 function downloadCSV() {
   const csv_content = tableCSV();
@@ -813,6 +803,73 @@ function restoreJSON() {
     reader.readAsText(file);
   };
   input.click();
+}
+
+// DATE FUNCTIONS
+
+function newDateYMD(year, month, day) {
+  // month is 1-12
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+function newDate(iso_date) {
+  return new Date(Date.parse(iso_date));
+}
+
+function getYearMonthDate(date) {
+  // month is 1-12
+  return [
+    date.getFullYear(),
+    date.getUTCMonth() + 1,
+    date.getUTCDate()
+  ];
+}
+
+function isToday(year, month, day) {
+  const [year2, month2, day2] = getYearMonthDate(new Date());
+  return year === year2 && month === month2 && day === day2;
+}
+
+function isThisMonth(year, month) {
+  const [year2, month2, day2] = getYearMonthDate(new Date());
+  return year === year2 && month === month2;
+}
+
+function min_date(date1, date2) {
+  return date1 < date2 ? date1 : date2;
+}
+
+function max_date(date1, date2) {
+  return date1 > date2 ? date1 : date2;
+}
+
+function daysInMonth(year, month) {
+  return newDateYMD(year, month + 1, 0).getDate();
+}
+
+function monthName(month) {
+  return newDateYMD(2025, month, 1).toLocaleString('default', { month: 'long' });
+}
+
+function moveIsoDate(iso_date, month_delta, day_delta) {
+  const date = newDate(iso_date);
+  const [year, month1, day1] = getYearMonthDate(date);
+  const month2 = Math.max(1, Math.min(month1 + month_delta, 12));
+  const offset = monthRowOffset(year, month1, month2);
+  const day2 = day1 + day_delta + offset;
+  const day2a = Math.max(1, Math.min(day2, daysInMonth(year, month2)));
+  const date2 = newDateYMD(year, month2, day2a);
+  return toIsoDate(date2);
+}
+
+function toIsoDate(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function monthRowOffset(year, month1, month2) {
+  const date1 = newDateYMD(year, month1, 1);
+  const date2 = newDateYMD(year, month2, 1);
+  return date1.getUTCDay() - date2.getUTCDay();
 }
 
 export default App;
