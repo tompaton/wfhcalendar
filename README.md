@@ -19,7 +19,6 @@ Uses local storage, so no account is required and nothing is sent to any servers
 - find and highlight max days between leave
 - auto-populate public holidays (from an api?)
 - add notes to a day
-- date input should be clipped to the current year
 
 
 ## Usage

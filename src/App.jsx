@@ -428,9 +428,11 @@ function ToolBar() {
   return (
     <div class={styles.toolBar}>
       <input type="date" name="from_date" value={state.toolbar.from_date}
+        min={state.year + '-01-01'} max={state.year + '-12-31'}
         oninput={onToolbarDateChange} />
       &ndash;
       <input type="date" name="to_date" value={state.toolbar.to_date}
+        min={state.year + '-01-01'} max={state.year + '-12-31'}
         oninput={onToolbarDateChange} />
       <input type="radio" name="loc_radio" id="loc_radio1"
         value="" checked={state.toolbar.loc === ""}
