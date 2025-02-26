@@ -268,3 +268,34 @@ table.target thead tr:first-child .selection {
 .toolBar .filter label {
   border: none;
 }
+
+/* print mode */
+@media print {
+  .toolBar {
+    display: none;
+  }
+
+  .menu {
+    display: none;
+  }
+
+  .header .yearSelector {
+    font-size: 2em;
+  }
+
+  .header button {
+    display: none;
+  }
+
+  .footer .instructions {
+    display: none;
+  }
+
+  .calendar tbody td {
+    border: none;
+  }
+
+  .calendar .weekday .day {
+    border: none;
+  }
+}

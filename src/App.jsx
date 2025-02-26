@@ -141,7 +141,7 @@ function App() {
         <Target year={state.year} />
       </div>
       <footer class={styles.footer}>
-        <p>
+        <p class={styles.instructions}>
           Click on a day to select.
           Shift-click to select a range of days.
           Choose work location and click Apply button.

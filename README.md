@@ -6,15 +6,12 @@ Uses local storage, so no account is required and nothing is sent to any servers
 
 ## To-Do
 
-- financial year totals (jul-jun)
-- selection to change financial year system (AU/US/UK/...)
-- printable layout
-    - hide toolbar
-    - hide footer instructions
-- support multiple types of leave, work (for different office locations etc.)
 - deploy to tompaton.com
 - push to github
 - sync between devices
+- financial year totals (jul-jun)
+- selection to change financial year system (AU/US/UK/...)
+- support multiple types of leave, work (for different office locations etc.)
 - find and highlight max days between leave
 - auto-populate public holidays (from an api?)
 - add notes to a day
