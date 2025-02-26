@@ -1,5 +1,5 @@
 import { createStore } from "solid-js/store";
-import { batch, createDeferred, For, Show } from "solid-js";
+import { batch, createDeferred, createMemo, For, Show } from "solid-js";
 import styles from './App.module.css';
 
 const [state, setState] = createStore({
@@ -58,15 +58,31 @@ function getMonthTotal(year, month, loc) {
 }
 
 function getCumulativeMonthTotal(year, month, loc) {
-  if (getMonthTotal(year, month, loc) === 0) return 0;
   // sum getMonthTotal for all months
-  return [...Array(month + 1).keys()].reduce((acc, month) => acc + getMonthTotal(year, month + 1, loc), 0);
+  return [...Array(month).keys()].reduce((acc, month) => acc + getMonthTotal(year, month + 1, loc), 0);
 }
 
 function getCumulativeMonthTotalPercent() {
   const [year, month, loc, ...locs] = arguments;
   const total = locs.reduce((acc, loc_) => acc + getCumulativeMonthTotal(year, month, loc_), 0);
   return total ? (getCumulativeMonthTotal(year, month, loc) / total * 100).toFixed(1) : '';
+}
+
+function getSelectionTotal(from_date, to_date, loc) {
+  const from_date_ = newDate(from_date);
+  const to_date_ = newDate(to_date);
+  let count = 0;
+  for (let date = from_date_; date <= to_date_; date.setUTCDate(date.getUTCDate() + 1)) {
+    if (getDayLoc(...getYearMonthDate(date)) === loc)
+      count++;
+  }
+  return count;
+}
+
+function getSelectionTotalPercent() {
+  const [from_date, to_date, loc, ...locs] = arguments;
+  const total = locs.reduce((acc, loc_) => acc + getSelectionTotal(from_date, to_date, loc_), 0);
+  return total ? (getSelectionTotal(from_date, to_date, loc) / total * 100).toFixed(1) : '';
 }
 
 function initSave() {
@@ -155,7 +171,7 @@ function Menu() {
     if (!state.last_backup) return 'Never backed up!';
     const date = new Date(state.last_backup);
     const days_ago = Math.floor((new Date() - date) / (1000 * 60 * 60 * 24));
-    return `Last backup ${toIsoDate(date)} (${days_ago} days ago)`;
+    return `Last backup ${toIsoDate(date)} (${days_ago} day${days_ago === 1 ? '' : 's'} ago)`;
   };
 
   return (
@@ -376,24 +392,61 @@ function MonthTotals2(props) {
   );
 }
 
+function getTargetTable(total_work, total_home, total_percent) {
+  const table = {
+    target: {},
+    total: {},
+    required: {}
+  };
+
+  table.total.work = total_work;
+  table.total.home = total_home;
+  table.target.work = Math.ceil(state.target / 100 * (table.total.work + table.total.home));
+  table.target.home = table.total.work + table.total.home - table.target.work;
+  table.required.work = table.target.work - table.total.work;
+  table.required.home = table.target.home - table.total.home;
+
+  table.total.percent = total_percent;
+
+  return table;
+}
+
 function Target(props) {
-  const total_work = () => getCumulativeMonthTotal(props.year, 12, 'work');
-  const total_home = () => getCumulativeMonthTotal(props.year, 12, 'home');
 
-  const target_work = () => Math.ceil(state.target / 100 * (total_work() + total_home()));
-  const target_home = () => total_work() + total_home() - target_work();
+  const table = createMemo(() => {
+    const table = getTargetTable(
+      getCumulativeMonthTotal(props.year, 12, 'work'),
+      getCumulativeMonthTotal(props.year, 12, 'home'),
+      getCumulativeMonthTotalPercent(props.year, 12, 'work', 'work', 'home'));
 
-  const required_work = () => target_work() - total_work();
-  const required_home = () => target_home() - total_home();
+    if (state.toolbar.from_date !== state.toolbar.to_date)
+      table.selection = getTargetTable(
+        getSelectionTotal(state.toolbar.from_date, state.toolbar.to_date, 'work'),
+        getSelectionTotal(state.toolbar.from_date, state.toolbar.to_date, 'home'),
+        getSelectionTotalPercent(state.toolbar.from_date, state.toolbar.to_date, 'work', 'work', 'home'));
+
+    return table;
+  });
 
   return (
     <table class={styles.target}>
       <thead>
+        <Show when={table().selection}>
+          <tr>
+            <th colspan={4}></th>
+            <th colspan={3} class={styles.selection}>Selection Total</th>
+          </tr>
+        </Show>
         <tr>
           <th></th>
           <th>Target</th>
           <th>Actual</th>
           <th>Required</th>
+          <Show when={table().selection}>
+            <th class={styles.selection}>Target</th>
+            <th class={styles.selection}>Actual</th>
+            <th class={styles.selection}>Required</th>
+          </Show>
         </tr>
       </thead>
       <tbody>
@@ -403,20 +456,35 @@ function Target(props) {
             <input type="number" min={0} max={100} value={state.target}
               onInput={(event) => setState('target', +event.target.value)} />
           </td>
-          <td>{getCumulativeMonthTotalPercent(props.year, 12, 'work', 'work', 'home')}</td>
+          <td>{table().total.percent}</td>
           <td></td>
+          <Show when={table().selection}>
+            <td class={styles.selection}></td>
+            <td class={styles.selection}>{table().selection.total.percent}</td>
+            <td class={styles.selection}></td>
+          </Show>
         </tr>
         <tr>
           <th>Work</th>
-          <td>{target_work()}</td>
-          <td>{total_work()}</td>
-          <td>{required_work()}</td>
+          <td>{table().target.work}</td>
+          <td>{table().total.work}</td>
+          <td>{table().required.work}</td>
+          <Show when={table().selection}>
+            <td class={styles.selection}>{table().selection.target.work}</td>
+            <td class={styles.selection}>{table().selection.total.work}</td>
+            <td class={styles.selection}>{table().selection.required.work}</td>
+          </Show>
         </tr>
         <tr>
           <th>Home</th>
-          <td>{target_home()}</td>
-          <td>{total_home()}</td>
-          <td>{required_home()}</td>
+          <td>{table().target.home}</td>
+          <td>{table().total.home}</td>
+          <td>{table().required.home}</td>
+          <Show when={table().selection}>
+            <td class={styles.selection}>{table().selection.target.home}</td>
+            <td class={styles.selection}>{table().selection.total.home}</td>
+            <td class={styles.selection}>{table().selection.required.home}</td>
+          </Show>
         </tr>
       </tbody>
     </table>

@@ -52,6 +52,8 @@
   position: relative;
   margin-top: -2em;
   margin-bottom: 0em;
+  margin-left: auto;
+  width: 50%;
   height: 2em;
   text-align: right;
 }
@@ -192,12 +194,13 @@ table.target th {
 }
 
 table.target thead th {
-  padding-right: 2.6em;
+  padding-right: 1.3em;
+  padding-left: 1.3em;
 }
 
 table.target td {
   text-align: right;
-  padding-right: 2em;
+  padding-right: 1.3em;
 }
 
 table.target input {
@@ -206,6 +209,11 @@ table.target input {
   background: transparent;
   font-size: 1em;
   margin-right: -1.2em;
+}
+
+table.target thead tr:first-child .selection {
+  text-align: center;
+  border-bottom: 2px solid #e95420;
 }
 
 /* toolbar */

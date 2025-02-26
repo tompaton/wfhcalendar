@@ -8,10 +8,9 @@ Uses local storage, so no account is required and nothing is sent to any servers
 
 - financial year totals (jul-jun)
 - selection to change financial year system (AU/US/UK/...)
-- selection to choose period to total
-- dim totals for future months
-- highlight final year total
 - printable layout
+    - hide toolbar
+    - hide footer instructions
 - support multiple types of leave, work (for different office locations etc.)
 - deploy to tompaton.com
 - push to github
