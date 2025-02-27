@@ -1,0 +1,9 @@
+version: '3'
+services:
+  www:
+    build: .
+    image: registry.tompaton.com/tompaton/wfhcalendar-server
+    ports:
+      - "127.0.0.1:5531:80"
+    volumes:
+      - ./data:/data
