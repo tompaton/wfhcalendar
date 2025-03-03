@@ -269,6 +269,35 @@ table.target thead tr:first-child .selection {
   border: none;
 }
 
+#sync_settings_button {
+  border-color: transparent;
+  background: transparent;
+  color: silver;
+}
+
+#sync_settings_button:hover {
+  border: revert;
+  background: revert;
+  color: revert;
+}
+
+dialog {
+  box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.5);
+  border: 1px solid silver;
+}
+
+dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0.25);
+}
+
+dialog label {
+  margin: 0 1em;
+}
+
+dialog button {
+  margin: 0 1em;
+}
+
 /* print mode */
 @media print {
   .toolBar {

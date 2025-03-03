@@ -20,6 +20,7 @@ const [state, setState] = createStore({
   target: 60.0,
   render_mode: 'mobile',
   last_backup: null,
+  sync: { uid: null, pwd: null, key: null },
 });
 
 function getDayLoc(year, month, day) {
@@ -107,6 +108,11 @@ function App() {
     setState('toolbar', 'filter', 'day', [false, true, true, true, true, true, false]);
   }
 
+  if (!state.sync.key) {
+    // random string to uniquely identify this device
+    setState('sync', 'key', Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2));
+  }
+
   const today = new Date();
   setState('year', today.getFullYear());
   populateToolbar(
@@ -151,6 +157,7 @@ function App() {
         </p>
         <p>&copy; 2025 <a href="https://tompaton.com">tompaton.com</a></p>
       </footer>
+      <SyncSettings />
     </div>
   );
 }
@@ -176,6 +183,7 @@ function Menu() {
 
   return (
     <div class={styles.menu}>
+      <SyncButton />
       <button onclick={downloadCSV} title="Download the currently displayed year in CSV format">Download CSV</button>
       <button onclick={backupJSON} title="Download all data in JSON format as a backup">Backup</button>
       <span class={styles.backupDate}>{last_backup()}</span>
@@ -685,6 +693,8 @@ function applyToolbar(event) {
 }
 
 function handleKeydown(event) {
+  if (document.querySelector('dialog').open) return;
+
   switch (event.key) {
     case 'ArrowLeft': {
       event.preventDefault();
@@ -874,6 +884,55 @@ function restoreJSON() {
   };
   input.click();
 }
+
+// settings
+
+function SyncButton() {
+  return (
+    <button id={styles.sync_settings_button}
+      onclick={() => document.getElementById('sync_dialog').showModal()}
+      title={syncEnabled()
+        ? "Sync enabled (click for settings)"
+        : "Sync disabled (click for settings)"}>
+      {syncEnabled() ? "Synced" : "Not synced"}
+    </button>
+  );
+}
+
+function syncEnabled() {
+  return state.sync?.uid && state.sync?.pwd;
+}
+
+function SyncSettings() {
+  return (
+    <dialog id="sync_dialog">
+      <h2>Sync</h2>
+      <p>
+        Enter sync settings to share data between devices: <br />
+        (contact me to register for free)
+      </p>
+      <form method="dialog">
+        <p>
+          <label for="sync_uid">Username</label>
+          <input id="sync_uid" type="text" value={state.sync?.uid || ''}
+            onchange={(event) => setState('sync', 'uid', event.target.value)} />
+        </p>
+        <p>
+          <label for="sync_pwd">Password</label>
+          <input id="sync_pwd" type="password" value={state.sync?.pwd || ''}
+            onchange={(event) => setState('sync', 'pwd', event.target.value)} />
+        </p>
+        <p>
+          <label for="sync_key">Sharing key</label>
+          <input id="sync_key" type="text" value={state.sync?.key || ''}
+            onchange={(event) => setState('sync', 'key', event.target.value)} />
+        </p>
+        <button>Close</button>
+      </form>
+    </dialog>
+  );
+}
+
 
 // DATE FUNCTIONS
 
