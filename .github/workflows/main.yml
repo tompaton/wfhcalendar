@@ -23,8 +23,8 @@ jobs:
 
     - name: Build and push Docker image
       run: |
-        docker-compose --profile prod build
-        docker-compose --profile prod push
+        docker compose --profile prod build
+        docker compose --profile prod push
 
     - name: Copy production files to server
       uses: appleboy/scp-action@v0.1.7
