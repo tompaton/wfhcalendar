@@ -1,0 +1,17 @@
+version: "3"
+
+services:
+  wfhcalendar:
+    image: registry.tompaton.com/tompaton/wfhcalendar
+    env_file:
+      - production.env
+    networks:
+      - www
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+
+networks:
+  www:
+    external:
+      name: www

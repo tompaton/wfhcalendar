@@ -1,42 +1,32 @@
-import { createStore } from "solid-js/store";
-import { batch, createDeferred, createMemo, For, Show } from "solid-js";
+import { batch, createMemo, For, Show } from "solid-js";
 import styles from './App.module.css';
+import { createSyncedStore, SyncButton, SyncSettings } from './AppSync';
 
-const [state, setState] = createStore({
-  year: new Date().getFullYear(),
-  years: {}, // { year: { month: { day: 'work'|'home'|'leave' } } }
-  maybe: {}, // { year: { month: { day: true|false } } }
-  last_loc: 'work',
-  toolbar: {
-    'from_date': null,
-    'to_date': null,
-    'loc': null,
-    'maybe': null,
-    'filter': {
-      'mode': 'all',
-      'day': [false, true, true, true, true, true, false],
-    },
+const [state, setState] = createSyncedStore(
+  'wfhcalendar',
+  {
+    // app state (will be synced between devices)
+    years: {}, // { year: { month: { day: 'work'|'home'|'leave' } } }
+    maybe: {}, // { year: { month: { day: true|false } } }
+    target: 60.0,
   },
-  target: 60.0,
-  render_mode: 'mobile',
-  last_backup: null,
-  sync: { url: null, date: null },
-});
-
-function getStateJSON() {
-  // deep copy
-  const backup = JSON.parse(JSON.stringify(state));
-
-  // remove ui/device state
-  delete backup.year;
-  delete backup.last_loc;
-  delete backup.toolbar;
-  delete backup.render_mode;
-  delete backup.sync;
-  delete backup.last_backup;
-
-  return JSON.stringify(backup);
-}
+  {
+    // UI state (won't be synced)
+    render_mode: 'mobile',
+    year: new Date().getFullYear(),
+    last_backup: null,
+    last_loc: 'work',
+    toolbar: {
+      from_date: null,
+      to_date: null,
+      loc: null,
+      maybe: null,
+      filter: {
+        mode: 'all',
+        day: [false, true, true, true, true, true, false],
+      },
+    },
+  });
 
 function getDayLoc(year, month, day) {
   return state.years[year]?.[month]?.[day] || '';
@@ -46,7 +36,7 @@ function setDayLoc(year, month, day, loc) {
   setState('years', year, {});
   setState('years', year, month, {});
   setState('years', year, month, day, loc);
-  setState('last_loc', loc);
+  setState('ui', 'last_loc', loc);
 }
 
 function getDayMaybe(year, month, day) {
@@ -101,31 +91,18 @@ function getSelectionTotalPercent() {
   return total ? (getSelectionTotal(from_date, to_date, loc) / total * 100).toFixed(1) : '';
 }
 
-function initSave() {
-  // load state
-  if (localStorage.wfhcalendar) {
-    setState(JSON.parse(localStorage.wfhcalendar));
-  }
-
-  // save state when it changes
-  createDeferred(() => {
-    console.log('saving...');
-    localStorage.wfhcalendar = JSON.stringify(state);
-  });
-
+function App() {
   // update current view
-  setState('render_mode', window.innerWidth < 1200 ? 'mobile' : 'desktop');
+  setState('ui', 'render_mode', window.innerWidth < 1200 ? 'mobile' : 'desktop');
 
   const today = new Date();
-  setState('year', today.getFullYear());
+  setState('ui', 'year', today.getFullYear());
   populateToolbar(
     { preventDefault: () => { } },
     today.getFullYear(),
     today.getMonth() + 1,
     today.getDate());
-}
 
-function bindEvents() {
   // capture and remove previous event listener if any, otherwise vite will keep
   // adding new ones each time the code is reloaded
   if (document.wfhkeydowneventlistener !== undefined) {
@@ -134,35 +111,24 @@ function bindEvents() {
   document.addEventListener('keydown', handleKeydown);
   document.wfhkeydowneventlistener = handleKeydown;
 
-  if (document.wfhvisibilitychangeeventlistener !== undefined) {
-    document.removeEventListener('visibilitychange', document.wfhvisibilitychangeeventlistener);
-  }
-  document.addEventListener('visibilitychange', handleVisibilitychange);
-  document.wfhvisibilitychangeeventlistener = handleVisibilitychange;
-}
-
-function App() {
-  initSave();
-  bindEvents();
-
   return (
     <div class={styles.App}>
-      <header class={styles.header}>
+      <header>
         <h1>WFH Calendar</h1>
         <YearSelector />
         <Menu />
         <ToolBar />
       </header>
       <div class={styles.content}>
-        <Show when={state.render_mode === 'mobile'}>
-          <MobileCalendar year={state.year} />
+        <Show when={state.ui.render_mode === 'mobile'}>
+          <MobileCalendar year={state.ui.year} />
         </Show>
-        <Show when={state.render_mode !== 'mobile'}>
-          <DesktopCalendar year={state.year} />
+        <Show when={state.ui.render_mode !== 'mobile'}>
+          <DesktopCalendar year={state.ui.year} />
         </Show>
-        <Target year={state.year} />
+        <Target year={state.ui.year} />
       </div>
-      <footer class={styles.footer}>
+      <footer>
         <p class={styles.instructions}>
           Click on a day to select.
           Shift-click to select a range of days.
@@ -171,35 +137,34 @@ function App() {
           <br />
           Keyboard shortcuts: Arrow keys and <kbd>w</kbd>, <kbd>W</kbd>, <kbd>h</kbd>, <kbd>H</kbd>, <kbd>l</kbd>, <kbd>L</kbd>, <kbd>space</kbd>.
         </p>
-        <p>&copy; 2025 <a href="https://tompaton.com">tompaton.com</a></p>
+        <p>&copy;2025 <a href="https://tompaton.com/">tompaton.com</a></p>
       </footer>
-      <SyncSettings />
+      <SyncSettings state={state} />
     </div>
   );
 }
 
-
 function YearSelector() {
   return (
     <div class={styles.yearSelector}>
-      <button title="Previous" onclick={() => setState('year', state.year - 1)}>&lt;</button>
-      <span>{state.year}</span>
-      <button title="Next" onclick={() => setState('year', state.year + 1)}>&gt;</button>
+      <button title="Previous" onclick={() => setState('ui', 'year', state.ui.year - 1)}>&lt;</button>
+      <span>{state.ui.year}</span>
+      <button title="Next" onclick={() => setState('ui', 'year', state.ui.year + 1)}>&gt;</button>
     </div>
   );
 }
 
 function Menu() {
   const last_backup = () => {
-    if (!state.last_backup) return 'Never backed up!';
-    const date = new Date(state.last_backup);
+    if (!state.ui.last_backup) return 'Never backed up!';
+    const date = new Date(state.ui.last_backup);
     const days_ago = Math.floor((new Date() - date) / (1000 * 60 * 60 * 24));
     return `Last backup ${toIsoDate(date)} (${days_ago} day${days_ago === 1 ? '' : 's'} ago)`;
   };
 
   return (
     <div class={styles.menu}>
-      <SyncButton />
+      <SyncButton state={state} />
       <button onclick={downloadCSV} title="Download the currently displayed year in CSV format">Download CSV</button>
       <button onclick={backupJSON} title="Download all data in JSON format as a backup">Backup</button>
       <span class={styles.backupDate}>{last_backup()}</span>
@@ -355,8 +320,8 @@ function Day(props) {
       [styles.current]:
         isToday(props.year, props.month, props.day),
       [styles.selection]:
-        state.toolbar.from_date <= iso_date
-        && iso_date <= state.toolbar.to_date,
+        state.ui.toolbar.from_date <= iso_date
+        && iso_date <= state.ui.toolbar.to_date,
       [styles.maybe]: getDayMaybe(props.year, props.month, props.day)
     };
     const loc = getDayLoc(props.year, props.month, props.day);
@@ -443,11 +408,11 @@ function Target(props) {
       getCumulativeMonthTotal(props.year, 12, 'home'),
       getCumulativeMonthTotalPercent(props.year, 12, 'work', 'work', 'home'));
 
-    if (state.toolbar.from_date !== state.toolbar.to_date)
+    if (state.ui.toolbar.from_date !== state.ui.toolbar.to_date)
       table.selection = getTargetTable(
-        getSelectionTotal(state.toolbar.from_date, state.toolbar.to_date, 'work'),
-        getSelectionTotal(state.toolbar.from_date, state.toolbar.to_date, 'home'),
-        getSelectionTotalPercent(state.toolbar.from_date, state.toolbar.to_date, 'work', 'work', 'home'));
+        getSelectionTotal(state.ui.toolbar.from_date, state.ui.toolbar.to_date, 'work'),
+        getSelectionTotal(state.ui.toolbar.from_date, state.ui.toolbar.to_date, 'home'),
+        getSelectionTotalPercent(state.ui.toolbar.from_date, state.ui.toolbar.to_date, 'work', 'work', 'home'));
 
     return table;
   });
@@ -519,33 +484,33 @@ function Target(props) {
 function ToolBar() {
   return (
     <div class={styles.toolBar}>
-      <input type="date" name="from_date" value={state.toolbar.from_date}
-        min={state.year + '-01-01'} max={state.year + '-12-31'}
+      <input type="date" name="from_date" value={state.ui.toolbar.from_date}
+        min={state.ui.year + '-01-01'} max={state.ui.year + '-12-31'}
         oninput={onToolbarDateChange} />
       &ndash;
-      <input type="date" name="to_date" value={state.toolbar.to_date}
-        min={state.year + '-01-01'} max={state.year + '-12-31'}
+      <input type="date" name="to_date" value={state.ui.toolbar.to_date}
+        min={state.ui.year + '-01-01'} max={state.ui.year + '-12-31'}
         oninput={onToolbarDateChange} />
       <br />
       <input type="radio" name="loc_radio" id="loc_radio1"
-        value="" checked={state.toolbar.loc === ""}
-        onchange={() => setState('toolbar', 'loc', '')} />
+        value="" checked={state.ui.toolbar.loc === ""}
+        onchange={() => setState('ui', 'toolbar', 'loc', '')} />
       <label for="loc_radio1">Empty</label>
       <input type="radio" name="loc_radio" id="loc_radio2"
-        value="work" checked={state.toolbar.loc === "work"}
-        onchange={() => setState('toolbar', 'loc', 'work')} />
+        value="work" checked={state.ui.toolbar.loc === "work"}
+        onchange={() => setState('ui', 'toolbar', 'loc', 'work')} />
       <label for="loc_radio2">Work</label>
       <input type="radio" name="loc_radio" id="loc_radio3"
-        value="home" checked={state.toolbar.loc === "home"}
-        onchange={() => setState('toolbar', 'loc', 'home')} />
+        value="home" checked={state.ui.toolbar.loc === "home"}
+        onchange={() => setState('ui', 'toolbar', 'loc', 'home')} />
       <label for="loc_radio3">Home</label>
       <input type="radio" name="loc_radio" id="loc_radio4"
-        value="leave" checked={state.toolbar.loc === "leave"}
-        onchange={() => setState('toolbar', 'loc', 'leave')} />
+        value="leave" checked={state.ui.toolbar.loc === "leave"}
+        onchange={() => setState('ui', 'toolbar', 'loc', 'leave')} />
       <label for="loc_radio4">Leave</label>
       <input type="checkbox" id="maybe_checkbox" value="1"
-        checked={state.toolbar.maybe}
-        onchange={(event) => setState('toolbar', 'maybe', event.target.checked)} />
+        checked={state.ui.toolbar.maybe}
+        onchange={(event) => setState('ui', 'toolbar', 'maybe', event.target.checked)} />
       <label for="maybe_checkbox">Maybe</label>
       <button onclick={applyToolbar}>Apply</button>
       <br />
@@ -559,72 +524,72 @@ function ApplyFilter() {
   return (
     <span class={styles.filter}>
       <input type="radio" name="filter_radio" id="filter_radio1"
-        value="all" checked={state.toolbar.filter?.mode === 'all'}
-        onchange={(event) => setState('toolbar', 'filter', 'mode', event.target.value)} />
+        value="all" checked={state.ui.toolbar.filter?.mode === 'all'}
+        onchange={(event) => setState('ui', 'toolbar', 'filter', 'mode', event.target.value)} />
       <label for="filter_radio1">All</label>
       <input type="radio" name="filter_radio" id="filter_radio2"
-        value="empty" checked={state.toolbar.filter?.mode === 'empty'}
-        onchange={(event) => setState('toolbar', 'filter', 'mode', event.target.value)} />
+        value="empty" checked={state.ui.toolbar.filter?.mode === 'empty'}
+        onchange={(event) => setState('ui', 'toolbar', 'filter', 'mode', event.target.value)} />
       <label for="filter_radio2">Empty only</label>
       <input type="radio" name="filter_radio" id="filter_radio3"
-        value="maybe" checked={state.toolbar.filter?.mode === 'maybe'}
-        onchange={(event) => setState('toolbar', 'filter', 'mode', event.target.value)} />
+        value="maybe" checked={state.ui.toolbar.filter?.mode === 'maybe'}
+        onchange={(event) => setState('ui', 'toolbar', 'filter', 'mode', event.target.value)} />
       <label for="filter_radio3">Maybe only</label>
       <br />
       <input type="checkbox" id="filter_day0"
-        value="0" checked={state.toolbar.filter?.day?.[0]}
-        onchange={(event) => setState('toolbar', 'filter', 'day', 0, event.target.checked)} />
+        value="0" checked={state.ui.toolbar.filter?.day?.[0]}
+        onchange={(event) => setState('ui', 'toolbar', 'filter', 'day', 0, event.target.checked)} />
       <label for="filter_day0">S</label>
       <input type="checkbox" id="filter_day1"
-        value="1" checked={state.toolbar.filter?.day?.[1]}
-        onchange={(event) => setState('toolbar', 'filter', 'day', 1, event.target.checked)} />
+        value="1" checked={state.ui.toolbar.filter?.day?.[1]}
+        onchange={(event) => setState('ui', 'toolbar', 'filter', 'day', 1, event.target.checked)} />
       <label for="filter_day1">M</label>
       <input type="checkbox" id="filter_day2"
-        value="2" checked={state.toolbar.filter?.day?.[2]}
-        onchange={(event) => setState('toolbar', 'filter', 'day', 2, event.target.checked)} />
+        value="2" checked={state.ui.toolbar.filter?.day?.[2]}
+        onchange={(event) => setState('ui', 'toolbar', 'filter', 'day', 2, event.target.checked)} />
       <label for="filter_day2">T</label>
       <input type="checkbox" id="filter_day3"
-        value="3" checked={state.toolbar.filter?.day?.[3]}
-        onchange={(event) => setState('toolbar', 'filter', 'day', 3, event.target.checked)} />
+        value="3" checked={state.ui.toolbar.filter?.day?.[3]}
+        onchange={(event) => setState('ui', 'toolbar', 'filter', 'day', 3, event.target.checked)} />
       <label for="filter_day3">W</label>
       <input type="checkbox" id="filter_day4"
-        value="4" checked={state.toolbar.filter?.day?.[4]}
-        onchange={(event) => setState('toolbar', 'filter', 'day', 4, event.target.checked)} />
+        value="4" checked={state.ui.toolbar.filter?.day?.[4]}
+        onchange={(event) => setState('ui', 'toolbar', 'filter', 'day', 4, event.target.checked)} />
       <label for="filter_day4">T</label>
       <input type="checkbox" id="filter_day5"
-        value="5" checked={state.toolbar.filter?.day?.[5]}
-        onchange={(event) => setState('toolbar', 'filter', 'day', 5, event.target.checked)} />
+        value="5" checked={state.ui.toolbar.filter?.day?.[5]}
+        onchange={(event) => setState('ui', 'toolbar', 'filter', 'day', 5, event.target.checked)} />
       <label for="filter_day5">F</label>
       <input type="checkbox" id="filter_day6"
-        value="6" checked={state.toolbar.filter?.day?.[6]}
-        onchange={(event) => setState('toolbar', 'filter', 'day', 6, event.target.checked)} />
+        value="6" checked={state.ui.toolbar.filter?.day?.[6]}
+        onchange={(event) => setState('ui', 'toolbar', 'filter', 'day', 6, event.target.checked)} />
       <label for="filter_day6">S</label>
     </span>
   );
 }
 
 function passesFilter(weekday, year, month, day) {
-  if (state.toolbar.filter.mode === 'empty'
+  if (state.ui.toolbar.filter.mode === 'empty'
     && getDayLoc(year, month, day) !== '')
     return false;
 
-  if (state.toolbar.filter.mode === 'maybe'
+  if (state.ui.toolbar.filter.mode === 'maybe'
     && !getDayMaybe(year, month, day))
     return false;
 
-  if (!state.toolbar.filter.day[weekday])
+  if (!state.ui.toolbar.filter.day[weekday])
     return false;
 
   return true;
 }
 
 function onToolbarDateChange(event) {
-  setState('toolbar', event.target.name, event.target.value);
+  setState('ui', 'toolbar', event.target.name, event.target.value);
 
-  if (state.toolbar.from_date > state.toolbar.to_date) {
-    setState('toolbar', {
-      'to_date': state.toolbar.from_date,
-      'from_date': state.toolbar.to_date
+  if (state.ui.toolbar.from_date > state.ui.toolbar.to_date) {
+    setState('ui', 'toolbar', {
+      'to_date': state.ui.toolbar.from_date,
+      'from_date': state.ui.toolbar.to_date
     });
   }
 }
@@ -637,76 +602,76 @@ function populateToolbar(event, year, month, day) {
 
   if (event.ctrlKey) {
     // set date
-    setState('toolbar', 'from_date', iso_date);
-    setState('toolbar', 'to_date', iso_date);
+    setState('ui', 'toolbar', 'from_date', iso_date);
+    setState('ui', 'toolbar', 'to_date', iso_date);
 
     // apply current loc/maybe (format painter)
-    setDayLoc(year, month, day, state.toolbar.loc);
-    setDayMaybe(year, month, day, state.toolbar.maybe);
+    setDayLoc(year, month, day, state.ui.toolbar.loc);
+    setDayMaybe(year, month, day, state.ui.toolbar.maybe);
 
   } else if (event.shiftKey) {
-    if (iso_date === state.toolbar.from_date || iso_date === state.toolbar.to_date) {
+    if (iso_date === state.ui.toolbar.from_date || iso_date === state.ui.toolbar.to_date) {
       // back to a single date
-      setState('toolbar', 'from_date', iso_date);
-      setState('toolbar', 'to_date', iso_date);
+      setState('ui', 'toolbar', 'from_date', iso_date);
+      setState('ui', 'toolbar', 'to_date', iso_date);
 
       // no filter if single day selected
-      setState('toolbar', 'filter', 'mode', 'all');
-    } else if (iso_date > state.toolbar.from_date && iso_date < state.toolbar.to_date) {
+      setState('ui', 'toolbar', 'filter', 'mode', 'all');
+    } else if (iso_date > state.ui.toolbar.from_date && iso_date < state.ui.toolbar.to_date) {
       // shrink selection
       const mid_date = new Date(
-        (Date.parse(state.toolbar.from_date)
-          + Date.parse(state.toolbar.to_date)) / 2);
+        (Date.parse(state.ui.toolbar.from_date)
+          + Date.parse(state.ui.toolbar.to_date)) / 2);
 
       if (date > mid_date)
-        setState('toolbar', 'to_date', iso_date);
+        setState('ui', 'toolbar', 'to_date', iso_date);
       else
-        setState('toolbar', 'from_date', iso_date);
+        setState('ui', 'toolbar', 'from_date', iso_date);
     } else {
       // extend selection
-      setState('toolbar', 'from_date', min_date(state.toolbar.from_date, iso_date));
-      setState('toolbar', 'to_date', max_date(state.toolbar.to_date, iso_date));
+      setState('ui', 'toolbar', 'from_date', min_date(state.ui.toolbar.from_date, iso_date));
+      setState('ui', 'toolbar', 'to_date', max_date(state.ui.toolbar.to_date, iso_date));
     }
 
     pickupRange();
 
   } else {
     // single day
-    setState('toolbar', 'from_date', iso_date);
-    setState('toolbar', 'to_date', iso_date);
+    setState('ui', 'toolbar', 'from_date', iso_date);
+    setState('ui', 'toolbar', 'to_date', iso_date);
 
     // pick up current loc/maybe
-    setState('toolbar', 'loc', getDayLoc(year, month, day));
-    setState('toolbar', 'maybe', getDayMaybe(year, month, day));
+    setState('ui', 'toolbar', 'loc', getDayLoc(year, month, day));
+    setState('ui', 'toolbar', 'maybe', getDayMaybe(year, month, day));
 
     // no filter if single day selected
-    setState('toolbar', 'filter', 'mode', 'all');
+    setState('ui', 'toolbar', 'filter', 'mode', 'all');
   }
 }
 
 function pickupRange() {
   // pick up current loc/maybe if all the same
-  const from_date = newDate(state.toolbar.from_date);
-  const to_date = newDate(state.toolbar.to_date);
-  setState('toolbar', 'loc', getRange(getDayLoc, from_date, to_date));
-  setState('toolbar', 'maybe', getRange(getDayMaybe, from_date, to_date));
+  const from_date = newDate(state.ui.toolbar.from_date);
+  const to_date = newDate(state.ui.toolbar.to_date);
+  setState('ui', 'toolbar', 'loc', getRange(getDayLoc, from_date, to_date));
+  setState('ui', 'toolbar', 'maybe', getRange(getDayMaybe, from_date, to_date));
 }
 
 function applyToolbar(event) {
   event.preventDefault();
 
   batch(() => {
-    const from_date = newDate(state.toolbar.from_date);
-    const to_date = newDate(state.toolbar.to_date);
+    const from_date = newDate(state.ui.toolbar.from_date);
+    const to_date = newDate(state.ui.toolbar.to_date);
 
     for (let date = new Date(from_date.getTime()); date <= to_date; date.setUTCDate(date.getUTCDate() + 1)) {
       const [year, month, day] = getYearMonthDate(date);
       if (!passesFilter(date.getUTCDay(), year, month, day))
         continue;
-      if (state.toolbar.loc !== null)
-        setDayLoc(year, month, day, state.toolbar.loc);
-      if (state.toolbar.maybe !== null)
-        setDayMaybe(year, month, day, state.toolbar.maybe);
+      if (state.ui.toolbar.loc !== null)
+        setDayLoc(year, month, day, state.ui.toolbar.loc);
+      if (state.ui.toolbar.maybe !== null)
+        setDayMaybe(year, month, day, state.ui.toolbar.maybe);
     }
   });
 }
@@ -717,120 +682,120 @@ function handleKeydown(event) {
   switch (event.key) {
     case 'ArrowLeft': {
       event.preventDefault();
-      const iso_date = moveIsoDate(state.toolbar.from_date, 0, -1);
-      setState('toolbar', 'from_date', iso_date);
+      const iso_date = moveIsoDate(state.ui.toolbar.from_date, 0, -1);
+      setState('ui', 'toolbar', 'from_date', iso_date);
       if (!event.shiftKey) {
-        setState('toolbar', 'to_date', iso_date);
+        setState('ui', 'toolbar', 'to_date', iso_date);
       }
       pickupRange();
       break;
     }
     case 'ArrowRight': {
       event.preventDefault();
-      const iso_date = moveIsoDate(state.toolbar.to_date, 0, +1);
-      setState('toolbar', 'to_date', iso_date);
+      const iso_date = moveIsoDate(state.ui.toolbar.to_date, 0, +1);
+      setState('ui', 'toolbar', 'to_date', iso_date);
       if (!event.shiftKey) {
-        setState('toolbar', 'from_date', iso_date);
+        setState('ui', 'toolbar', 'from_date', iso_date);
       }
       pickupRange();
       break;
     }
     case 'ArrowUp': {
       event.preventDefault();
-      const iso_date = moveIsoDate(state.toolbar.from_date, -1, 0);
-      setState('toolbar', 'from_date', iso_date);
+      const iso_date = moveIsoDate(state.ui.toolbar.from_date, -1, 0);
+      setState('ui', 'toolbar', 'from_date', iso_date);
       if (!event.shiftKey) {
-        setState('toolbar', 'to_date', iso_date);
+        setState('ui', 'toolbar', 'to_date', iso_date);
       }
       pickupRange();
       break;
     }
     case 'ArrowDown': {
       event.preventDefault();
-      const iso_date = moveIsoDate(state.toolbar.to_date, +1, 0);
-      setState('toolbar', 'to_date', iso_date);
+      const iso_date = moveIsoDate(state.ui.toolbar.to_date, +1, 0);
+      setState('ui', 'toolbar', 'to_date', iso_date);
       if (!event.shiftKey) {
-        setState('toolbar', 'from_date', iso_date);
+        setState('ui', 'toolbar', 'from_date', iso_date);
       }
       pickupRange();
       break;
     }
     case 'Home': {
       event.preventDefault();
-      const from_date = newDate(state.toolbar.from_date);
+      const from_date = newDate(state.ui.toolbar.from_date);
       const [year, month, date] = getYearMonthDate(from_date);
       const first = newDateYMD(year, month, 1);
       const iso_date = toIsoDate(first);
-      setState('toolbar', 'from_date', iso_date);
+      setState('ui', 'toolbar', 'from_date', iso_date);
       if (!event.shiftKey) {
-        setState('toolbar', 'to_date', iso_date);
+        setState('ui', 'toolbar', 'to_date', iso_date);
       }
       pickupRange();
       break;
     }
     case 'End': {
       event.preventDefault();
-      const to_date = newDate(state.toolbar.to_date);
+      const to_date = newDate(state.ui.toolbar.to_date);
       const [year, month, date] = getYearMonthDate(to_date);
       const last = newDateYMD(year, month + 1, 0);
       const iso_date = toIsoDate(last);
-      setState('toolbar', 'to_date', iso_date);
+      setState('ui', 'toolbar', 'to_date', iso_date);
       if (!event.shiftKey) {
-        setState('toolbar', 'from_date', iso_date);
+        setState('ui', 'toolbar', 'from_date', iso_date);
       }
       pickupRange();
       break;
     }
     case 'PageUp': {
       event.preventDefault();
-      setState('year', state.year - 1);
-      const [from_year, from_month, from_day] = getYearMonthDate(newDate(state.toolbar.from_date));
-      const [to_year, to_month, to_day] = getYearMonthDate(newDate(state.toolbar.to_date));
-      const from_date = newDateYMD(state.year, from_month, from_day);
-      const to_date = newDateYMD(state.year, to_month, to_day);
-      setState('toolbar', 'from_date', toIsoDate(from_date));
-      setState('toolbar', 'to_date', toIsoDate(to_date));
+      setState('ui', 'year', state.ui.year - 1);
+      const [from_year, from_month, from_day] = getYearMonthDate(newDate(state.ui.toolbar.from_date));
+      const [to_year, to_month, to_day] = getYearMonthDate(newDate(state.ui.toolbar.to_date));
+      const from_date = newDateYMD(state.ui.year, from_month, from_day);
+      const to_date = newDateYMD(state.ui.year, to_month, to_day);
+      setState('ui', 'toolbar', 'from_date', toIsoDate(from_date));
+      setState('ui', 'toolbar', 'to_date', toIsoDate(to_date));
       pickupRange();
       break;
     }
     case 'PageDown': {
       event.preventDefault();
-      setState('year', state.year + 1);
-      const [from_year, from_month, from_day] = getYearMonthDate(newDate(state.toolbar.from_date));
-      const [to_year, to_month, to_day] = getYearMonthDate(newDate(state.toolbar.to_date));
-      const from_date = newDateYMD(state.year, from_month, from_day);
-      const to_date = newDateYMD(state.year, to_month, to_day);
-      setState('toolbar', 'from_date', toIsoDate(from_date));
-      setState('toolbar', 'to_date', toIsoDate(to_date));
+      setState('ui', 'year', state.ui.year + 1);
+      const [from_year, from_month, from_day] = getYearMonthDate(newDate(state.ui.toolbar.from_date));
+      const [to_year, to_month, to_day] = getYearMonthDate(newDate(state.ui.toolbar.to_date));
+      const from_date = newDateYMD(state.ui.year, from_month, from_day);
+      const to_date = newDateYMD(state.ui.year, to_month, to_day);
+      setState('ui', 'toolbar', 'from_date', toIsoDate(from_date));
+      setState('ui', 'toolbar', 'to_date', toIsoDate(to_date));
       pickupRange();
       break;
     }
     case ' ':
-      setState('toolbar', { 'loc': '', 'maybe': false });
+      setState('ui', 'toolbar', { 'loc': '', 'maybe': false });
       applyToolbar(event)
       break;
     case 'w':
-      setState('toolbar', { 'loc': 'work', 'maybe': false });
+      setState('ui', 'toolbar', { 'loc': 'work', 'maybe': false });
       applyToolbar(event)
       break;
     case 'W':
-      setState('toolbar', { 'loc': 'work', 'maybe': true });
+      setState('ui', 'toolbar', { 'loc': 'work', 'maybe': true });
       applyToolbar(event)
       break;
     case 'h':
-      setState('toolbar', { 'loc': 'home', 'maybe': false });
+      setState('ui', 'toolbar', { 'loc': 'home', 'maybe': false });
       applyToolbar(event)
       break;
     case 'H':
-      setState('toolbar', { 'loc': 'home', 'maybe': true });
+      setState('ui', 'toolbar', { 'loc': 'home', 'maybe': true });
       applyToolbar(event)
       break;
     case 'l':
-      setState('toolbar', { 'loc': 'leave', 'maybe': false });
+      setState('ui', 'toolbar', { 'loc': 'leave', 'maybe': false });
       applyToolbar(event)
       break;
     case 'L':
-      setState('toolbar', { 'loc': 'leave', 'maybe': true });
+      setState('ui', 'toolbar', { 'loc': 'leave', 'maybe': true });
       applyToolbar(event)
       break;
   }
@@ -840,7 +805,7 @@ function handleKeydown(event) {
 
 function downloadCSV() {
   const csv_content = tableCSV();
-  downloadContent(csv_content, 'text/csv', 'wfhcalendar-' + state.year + '.csv');
+  downloadContent(csv_content, 'text/csv', 'wfhcalendar-' + state.ui.year + '.csv');
 }
 
 function downloadContent(content, content_type, filename) {
@@ -872,8 +837,8 @@ function tableCSV() {
 
 function backupJSON() {
   const timestamp = new Date().toISOString().slice(0, 19).replace(/[-:]/g, '');
-  downloadContent(getStateJSON(), 'application/json', 'wfhcalendar-' + timestamp + '.json');
-  setState('last_backup', new Date().toISOString());
+  downloadContent(JSON.stringify(state), 'application/json', 'wfhcalendar-' + timestamp + '.json');
+  setState('ui', 'last_backup', new Date().toISOString());
 }
 
 function restoreJSON() {
@@ -897,122 +862,6 @@ function restoreJSON() {
   input.click();
 }
 
-// settings
-
-function SyncButton() {
-  return (
-    <>
-      <button id={styles.sync_settings_button}
-        onclick={() => document.getElementById('sync_dialog').showModal()}
-        title={syncEnabled()
-          ? "Sync enabled (click for settings)"
-          : "Sync disabled (click for settings)"}>
-        {syncEnabled() ? "Synced" : "Not synced"}
-      </button>
-      <Show when={syncEnabled()}>
-        <button onclick={syncServerState} title="Refresh state from server">↻</button>
-      </Show>
-    </>
-  );
-}
-
-function syncEnabled() {
-  return state.sync?.url;
-}
-
-function generateRandomSyncUrl(event) {
-  event.preventDefault();
-
-  // random string to uniquely identify this device
-  setState('sync', 'url',
-    'https://wfhcalendar.tompaton.com/saved/'
-    + Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2));
-}
-
-function SyncSettings() {
-  return (
-    <dialog id="sync_dialog">
-      <h2>Sync</h2>
-      <p>
-        Enter sync settings url to share data between devices: <br />
-        (contact me to register for free, or provide your own WebDAV url)
-      </p>
-      <form method="dialog">
-        <p>
-          <label for="sync_url">Sharing url</label>
-          <input id="sync_url" type="text" value={state.sync?.url || ''}
-            onchange={(event) => setState('sync', 'url', event.target.value)} />
-          <button onclick={(event) => generateRandomSyncUrl(event)} title="Generate random sync url">new</button>
-        </p>
-        <button>Close</button>
-      </form>
-    </dialog>
-  );
-}
-
-function handleVisibilitychange() {
-  // save when user leaves the page or focuses it again
-  syncServerState();
-}
-
-function syncServerState() {
-  // GET, reconcile then PUT merged value back
-  const config = {
-    method: 'GET',
-    credentials: 'include',
-    mode: 'cors',
-    headers: {}
-  };
-  if (state.sync.date)
-    config.headers['If-Modified-Since'] = state.sync.date;
-
-  fetch(state.sync.url, config)
-    .then(response => {
-      if (response.status === 200) {
-        console.log('Updated');
-        setState('sync', 'date', response.headers.get("Last-Modified"));
-        return response.json();
-      }
-      // status 304 --> no update
-      if (response.status === 304) {
-        console.log('No update');
-        return;
-      }
-      // status 404 --> create
-      if (response.status === 404) {
-        console.log('Not found');
-        return;
-      }
-      // other status --> error
-      console.error('Error: ' + response.status);
-    }
-    )
-    .then(
-      data => {
-        if (data) {
-          console.log('Loaded');
-          setState(data);
-        }
-
-        const config = {
-          method: 'PUT',
-          credentials: 'include',
-          mode: 'cors',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: getStateJSON()
-        };
-        fetch(state.sync.url, config)
-          .then(response => {
-            console.log('Saved:' + response.status);
-            if (response.status === 201 || response.status === 204) {
-              setState('sync', 'date', response.headers.get("Date"));
-            }
-          });
-      }
-    );
-}
 
 // DATE FUNCTIONS
 

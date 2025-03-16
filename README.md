@@ -22,33 +22,34 @@ for this purpose.
 
 ## Usage
 
-In the project directory, first run:
-
 ```bash
-$ npm install # or pnpm install or yarn install
+$ docker-compose build && HOSTNAME=$(hostname) docker-compose up
 ```
 
-Then you can run:
-
-### `npm run dev` or `npm start`
-
 Runs the app in the development mode.<br>
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+Open [http://localhost:8080](http://localhost:8080) to view it in the browser.
 
 The page will reload if you make edits.<br>
 
-### `npm run build`
+wfhcalendar-web-1 - port 8080 - nginx server that handles WebDAV and proxies to wfhcalendar-dev-1
 
-Builds the app for production to the `dist` folder.<br>
-It correctly bundles Solid in production mode and optimizes the build for the best performance.
+wfhcalendar-dev-1 - port 3000 - vite.js server that handles hotloading etc.
 
-The build is minified and the filenames include the hashes.<br>
-Your app is ready to be deployed!
-
+setting the HOSTNAME environment variable allows access via another device
+ 
 ## Deployment
 
-You can deploy the `dist` folder to any static host provider (netlify, surge, now, etc.)
+In production the nginx server handles WebDAV and serves the app using static files.
 
+Build and push production container:
+
+```bash
+docker-compose --profile prod build
+docker-compose --profile prod push
+
+scp production.env production.yml phosphorus:/var/data/wfhcalendar.tompaton.com/
+ssh tom@phosphorus "cd /var/data/wfhcalendar.tompaton.com ; docker-compose -f production.yml pull; docker-compose -f production.yml up -d"
+```
 
 # Contact
 

@@ -1,0 +1,13 @@
+button.syncActive {}
+
+button.syncOk {
+    background-color: #dfd;
+    border-color: #4d4;
+    transition: all 1.5s ease-in-out;
+}
+
+button.syncFail {
+    background-color: #f88;
+    border-color: #d44;
+    transition: all 1.5s ease-in-out;
+}

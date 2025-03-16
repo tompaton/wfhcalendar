@@ -7,7 +7,7 @@
   accent-color: navy;
 }
 
-.header {
+.App header {
   background-color: #282c34;
   font-size: 1.25em;
   color: #bac5d5;
@@ -16,11 +16,11 @@
   z-index: 3;
 }
 
-.header h1 {
+.App header h1 {
   margin: 0.25em;
 }
 
-.footer {
+.App footer {
   background-color: #bac5d5;
   color: #282c34;
   bottom: 0;
@@ -28,11 +28,11 @@
   z-index: 3;
 }
 
-.footer a {
+.App footer a {
   color: #282c34;
 }
 
-.content {
+.App .content {
   flex-grow: 1;
 }
 
@@ -276,18 +276,6 @@ table.target thead tr:first-child .selection {
 
 .toolBar br {
   display: none;
-}
-
-#sync_settings_button {
-  border-color: transparent;
-  background: transparent;
-  color: silver;
-}
-
-#sync_settings_button:hover {
-  border: revert;
-  background: revert;
-  color: revert;
 }
 
 dialog {
