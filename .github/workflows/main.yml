@@ -32,9 +32,7 @@ jobs:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        source: |
-          production.env
-          production.yml
+        source: "production.env,production.yml"
         target: /var/data/wfhcalendar.tompaton.com/
 
     - name: Deploy on server
