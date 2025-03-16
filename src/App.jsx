@@ -114,7 +114,7 @@ function App() {
   return (
     <div class={styles.App}>
       <header>
-        <h1>WFH Calendar X</h1>
+        <h1>WFH Calendar</h1>
         <YearSelector />
         <Menu />
         <ToolBar />
