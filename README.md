@@ -11,8 +11,6 @@ for this purpose.
 
 ## To-Do
 
-- deploy to tompaton.com
-- push to github
 - financial year totals (jul-jun)
 - selection to change financial year system (AU/US/UK/...)
 - support multiple types of leave, work (for different office locations etc.)
