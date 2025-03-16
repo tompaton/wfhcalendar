@@ -48,26 +48,31 @@
   margin: 0 1em;
 }
 
-.menu {
-  position: relative;
-  margin-top: -2em;
-  margin-bottom: 0em;
-  margin-left: auto;
-  width: 50%;
-  height: 2em;
-  text-align: right;
-}
-
-.menu button {
-  margin: 0 1em;
-}
-
 .backupDate {
-  position: absolute;
-  top: -20px;
-  width: 100%;
-  right: 50px;
   font-size: 0.6em;
+}
+
+@media (min-width: 600px) {
+  .menu {
+    position: relative;
+    margin-top: -2em;
+    margin-bottom: 0em;
+    margin-left: auto;
+    width: 50%;
+    height: 2em;
+    text-align: right;
+  }
+
+  .menu button {
+    margin: 0 1em;
+  }
+
+  .backupDate {
+    position: absolute;
+    top: -20px;
+    width: 100%;
+    right: 50px;
+  }
 }
 
 /* calendar table */
@@ -269,6 +274,10 @@ table.target thead tr:first-child .selection {
   border: none;
 }
 
+.toolBar br {
+  display: none;
+}
+
 #sync_settings_button {
   border-color: transparent;
   background: transparent;
@@ -296,6 +305,14 @@ dialog label {
 
 dialog button {
   margin: 0 1em;
+}
+
+/* mobile mode */
+
+@media (max-width: 600px) {
+  .toolBar br {
+    display: block;
+  }
 }
 
 /* print mode */

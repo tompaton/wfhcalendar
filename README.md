@@ -1,21 +1,24 @@
 # WFH Calendar
 
-Yearly calendar to track days worked from home, in the office, on leave etc. and provide summary stats.
+Yearly calendar to track days worked from home, in the office, on leave etc. 
+and provide summary stats.
 
-Uses local storage, so no account is required and nothing is sent to any servers.
+Uses local storage, so no account is required.
+
+You can optionally configure syncing between devices by entering a url that will 
+accept GET/PUT (WebDav). Contact me if you'd like to register to use my server 
+for this purpose.
 
 ## To-Do
 
 - deploy to tompaton.com
 - push to github
-- sync between devices
 - financial year totals (jul-jun)
 - selection to change financial year system (AU/US/UK/...)
 - support multiple types of leave, work (for different office locations etc.)
 - find and highlight max days between leave
 - auto-populate public holidays (from an api?)
 - add notes to a day
-
 
 ## Usage
 

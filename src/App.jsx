@@ -20,8 +20,23 @@ const [state, setState] = createStore({
   target: 60.0,
   render_mode: 'mobile',
   last_backup: null,
-  sync: { uid: null, pwd: null, key: null },
+  sync: { url: null, date: null },
 });
+
+function getStateJSON() {
+  // deep copy
+  const backup = JSON.parse(JSON.stringify(state));
+
+  // remove ui/device state
+  delete backup.year;
+  delete backup.last_loc;
+  delete backup.toolbar;
+  delete backup.render_mode;
+  delete backup.sync;
+  delete backup.last_backup;
+
+  return JSON.stringify(backup);
+}
 
 function getDayLoc(year, month, day) {
   return state.years[year]?.[month]?.[day] || '';
@@ -87,31 +102,19 @@ function getSelectionTotalPercent() {
 }
 
 function initSave() {
+  // load state
   if (localStorage.wfhcalendar) {
     setState(JSON.parse(localStorage.wfhcalendar));
   }
+
+  // save state when it changes
   createDeferred(() => {
     console.log('saving...');
     localStorage.wfhcalendar = JSON.stringify(state);
   });
-}
 
-function App() {
-  initSave();
-
+  // update current view
   setState('render_mode', window.innerWidth < 1200 ? 'mobile' : 'desktop');
-  setState('toolbar', 'filter', {});
-  if (state.toolbar.filter.mode === undefined) {
-    setState('toolbar', 'filter', 'mode', 'all');
-  }
-  if (state.toolbar.filter.day === undefined) {
-    setState('toolbar', 'filter', 'day', [false, true, true, true, true, true, false]);
-  }
-
-  if (!state.sync.key) {
-    // random string to uniquely identify this device
-    setState('sync', 'key', Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2));
-  }
 
   const today = new Date();
   setState('year', today.getFullYear());
@@ -120,7 +123,9 @@ function App() {
     today.getFullYear(),
     today.getMonth() + 1,
     today.getDate());
+}
 
+function bindEvents() {
   // capture and remove previous event listener if any, otherwise vite will keep
   // adding new ones each time the code is reloaded
   if (document.wfhkeydowneventlistener !== undefined) {
@@ -128,6 +133,17 @@ function App() {
   }
   document.addEventListener('keydown', handleKeydown);
   document.wfhkeydowneventlistener = handleKeydown;
+
+  if (document.wfhvisibilitychangeeventlistener !== undefined) {
+    document.removeEventListener('visibilitychange', document.wfhvisibilitychangeeventlistener);
+  }
+  document.addEventListener('visibilitychange', handleVisibilitychange);
+  document.wfhvisibilitychangeeventlistener = handleVisibilitychange;
+}
+
+function App() {
+  initSave();
+  bindEvents();
 
   return (
     <div class={styles.App}>
@@ -510,6 +526,7 @@ function ToolBar() {
       <input type="date" name="to_date" value={state.toolbar.to_date}
         min={state.year + '-01-01'} max={state.year + '-12-31'}
         oninput={onToolbarDateChange} />
+      <br />
       <input type="radio" name="loc_radio" id="loc_radio1"
         value="" checked={state.toolbar.loc === ""}
         onchange={() => setState('toolbar', 'loc', '')} />
@@ -531,6 +548,7 @@ function ToolBar() {
         onchange={(event) => setState('toolbar', 'maybe', event.target.checked)} />
       <label for="maybe_checkbox">Maybe</label>
       <button onclick={applyToolbar}>Apply</button>
+      <br />
 
       <ApplyFilter />
     </div>
@@ -552,6 +570,7 @@ function ApplyFilter() {
         value="maybe" checked={state.toolbar.filter?.mode === 'maybe'}
         onchange={(event) => setState('toolbar', 'filter', 'mode', event.target.value)} />
       <label for="filter_radio3">Maybe only</label>
+      <br />
       <input type="checkbox" id="filter_day0"
         value="0" checked={state.toolbar.filter?.day?.[0]}
         onchange={(event) => setState('toolbar', 'filter', 'day', 0, event.target.checked)} />
@@ -852,15 +871,8 @@ function tableCSV() {
 }
 
 function backupJSON() {
-  const backup = JSON.parse(JSON.stringify(state));
-  delete backup.year;
-  delete backup.last_loc;
-  delete backup.toolbar;
-  delete backup.render_mode;
-
-  const json_content = JSON.stringify(backup);
   const timestamp = new Date().toISOString().slice(0, 19).replace(/[-:]/g, '');
-  downloadContent(json_content, 'application/json', 'wfhcalendar-' + timestamp + '.json');
+  downloadContent(getStateJSON(), 'application/json', 'wfhcalendar-' + timestamp + '.json');
   setState('last_backup', new Date().toISOString());
 }
 
@@ -889,18 +901,32 @@ function restoreJSON() {
 
 function SyncButton() {
   return (
-    <button id={styles.sync_settings_button}
-      onclick={() => document.getElementById('sync_dialog').showModal()}
-      title={syncEnabled()
-        ? "Sync enabled (click for settings)"
-        : "Sync disabled (click for settings)"}>
-      {syncEnabled() ? "Synced" : "Not synced"}
-    </button>
+    <>
+      <button id={styles.sync_settings_button}
+        onclick={() => document.getElementById('sync_dialog').showModal()}
+        title={syncEnabled()
+          ? "Sync enabled (click for settings)"
+          : "Sync disabled (click for settings)"}>
+        {syncEnabled() ? "Synced" : "Not synced"}
+      </button>
+      <Show when={syncEnabled()}>
+        <button onclick={syncServerState} title="Refresh state from server">↻</button>
+      </Show>
+    </>
   );
 }
 
 function syncEnabled() {
-  return state.sync?.uid && state.sync?.pwd;
+  return state.sync?.url;
+}
+
+function generateRandomSyncUrl(event) {
+  event.preventDefault();
+
+  // random string to uniquely identify this device
+  setState('sync', 'url',
+    'https://wfhcalendar.tompaton.com/saved/'
+    + Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2));
 }
 
 function SyncSettings() {
@@ -908,24 +934,15 @@ function SyncSettings() {
     <dialog id="sync_dialog">
       <h2>Sync</h2>
       <p>
-        Enter sync settings to share data between devices: <br />
-        (contact me to register for free)
+        Enter sync settings url to share data between devices: <br />
+        (contact me to register for free, or provide your own WebDAV url)
       </p>
       <form method="dialog">
         <p>
-          <label for="sync_uid">Username</label>
-          <input id="sync_uid" type="text" value={state.sync?.uid || ''}
-            onchange={(event) => setState('sync', 'uid', event.target.value)} />
-        </p>
-        <p>
-          <label for="sync_pwd">Password</label>
-          <input id="sync_pwd" type="password" value={state.sync?.pwd || ''}
-            onchange={(event) => setState('sync', 'pwd', event.target.value)} />
-        </p>
-        <p>
-          <label for="sync_key">Sharing key</label>
-          <input id="sync_key" type="text" value={state.sync?.key || ''}
-            onchange={(event) => setState('sync', 'key', event.target.value)} />
+          <label for="sync_url">Sharing url</label>
+          <input id="sync_url" type="text" value={state.sync?.url || ''}
+            onchange={(event) => setState('sync', 'url', event.target.value)} />
+          <button onclick={(event) => generateRandomSyncUrl(event)} title="Generate random sync url">new</button>
         </p>
         <button>Close</button>
       </form>
@@ -933,6 +950,69 @@ function SyncSettings() {
   );
 }
 
+function handleVisibilitychange() {
+  // save when user leaves the page or focuses it again
+  syncServerState();
+}
+
+function syncServerState() {
+  // GET, reconcile then PUT merged value back
+  const config = {
+    method: 'GET',
+    credentials: 'include',
+    mode: 'cors',
+    headers: {}
+  };
+  if (state.sync.date)
+    config.headers['If-Modified-Since'] = state.sync.date;
+
+  fetch(state.sync.url, config)
+    .then(response => {
+      if (response.status === 200) {
+        console.log('Updated');
+        setState('sync', 'date', response.headers.get("Last-Modified"));
+        return response.json();
+      }
+      // status 304 --> no update
+      if (response.status === 304) {
+        console.log('No update');
+        return;
+      }
+      // status 404 --> create
+      if (response.status === 404) {
+        console.log('Not found');
+        return;
+      }
+      // other status --> error
+      console.error('Error: ' + response.status);
+    }
+    )
+    .then(
+      data => {
+        if (data) {
+          console.log('Loaded');
+          setState(data);
+        }
+
+        const config = {
+          method: 'PUT',
+          credentials: 'include',
+          mode: 'cors',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: getStateJSON()
+        };
+        fetch(state.sync.url, config)
+          .then(response => {
+            console.log('Saved:' + response.status);
+            if (response.status === 201 || response.status === 204) {
+              setState('sync', 'date', response.headers.get("Date"));
+            }
+          });
+      }
+    );
+}
 
 // DATE FUNCTIONS
 
