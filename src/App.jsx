@@ -118,13 +118,17 @@ function App() {
         <Target year={state.ui.year} />
       </div>
       <footer>
-        <p class={styles.instructions}>
+        <p classList={{ [styles.instructions]: true, [styles.desktopOnly]: true }}>
           Click on a day to select.
           Shift-click to select a range of days.
           Choose work location and click Apply button.
           Ctrl-click to repeat last selection.
           <br />
           Keyboard shortcuts: Arrow keys and <kbd>w</kbd>, <kbd>W</kbd>, <kbd>h</kbd>, <kbd>H</kbd>, <kbd>l</kbd>, <kbd>L</kbd>, <kbd>space</kbd>.
+        </p>
+        <p classList={{ [styles.instructions]: true, [styles.mobileOnly]: true }}>
+          Tap on a day to select.
+          Choose work location and click Apply button.
         </p>
         <p>&copy;2025 <a href="https://tompaton.com/">tompaton.com</a></p>
       </footer>

@@ -337,8 +337,24 @@ dialog button {
 
 /* mobile mode */
 
+.desktopOnly {
+  display: block;
+}
+
+.mobileOnly {
+  display: none;
+}
+
 @media (max-width: 600px) {
   .toolBar br {
+    display: block;
+  }
+
+  .desktopOnly {
+    display: none;
+  }
+
+  .mobileOnly {
     display: block;
   }
 }
