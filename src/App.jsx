@@ -95,13 +95,7 @@ function App() {
   // update current view
   setState('ui', 'render_mode', window.innerWidth < 1200 ? 'mobile' : 'desktop');
 
-  const today = new Date();
-  setState('ui', 'year', today.getFullYear());
-  populateToolbar(
-    { preventDefault: () => { } },
-    today.getFullYear(),
-    today.getMonth() + 1,
-    today.getDate());
+  gotoToday();
 
   // capture and remove previous event listener if any, otherwise vite will keep
   // adding new ones each time the code is reloaded
@@ -120,12 +114,7 @@ function App() {
         <ToolBar />
       </header>
       <div class={styles.content}>
-        <Show when={state.ui.render_mode === 'mobile'}>
-          <MobileCalendar year={state.ui.year} />
-        </Show>
-        <Show when={state.ui.render_mode !== 'mobile'}>
-          <DesktopCalendar year={state.ui.year} />
-        </Show>
+        <DesktopCalendar year={state.ui.year} />
         <Target year={state.ui.year} />
       </div>
       <footer>
@@ -175,107 +164,29 @@ function Menu() {
 
 function DesktopCalendar(props) {
   return (
-    <table class={styles.calendar}>
-      <thead>
-        <Headers />
-      </thead>
-      <tbody>
+    <div class={styles.calendar}>
+      <div class={styles.year}>
         <For each={[...Array(12).keys()]}>{(month) => (
           <Month year={props.year} month={month + 1} />
         )}</For>
-      </tbody>
-    </table>
+      </div>
+    </div>
   );
 }
 
-function MobileCalendar(props) {
-  return (
-    <For each={[...Array(12).keys()]}>{(month) => (
-      <>
-        <h3>{monthName(month + 1)}</h3>
-        <table class={styles.calendar}>
-          <thead>
-            <Headers2 />
-          </thead>
-          <tbody>
-            <MonthWeek year={props.year} month={month + 1} week={1} />
-            <MonthWeek year={props.year} month={month + 1} week={2} />
-            <MonthWeek year={props.year} month={month + 1} week={3} />
-            <MonthWeek year={props.year} month={month + 1} week={4} />
-            <MonthWeek year={props.year} month={month + 1} week={5} />
-            <MonthWeek year={props.year} month={month + 1} week={6} />
-          </tbody>
-        </table>
-        <MonthTotals2 year={props.year} month={month + 1} />
-      </>
-    )}</For>
-  );
-}
-
-function Headers() {
-  function* daysGen() {
-    for (let i = 0; i < 6; i++)
-      for (let d of ['', 'M', 'T', 'W', 'T', 'F', ''])
-        yield d;
-  };
-
-  const days = () => [...daysGen()];
-  return (
-    <>
-      <tr>
-        <th></th>
-        <th colspan={6 * 7}></th>
-        <th colspan={3}>Total</th>
-        <th colspan={3}>Cumulative</th>
-        <th>Percentage</th>
-      </tr>
-      <tr>
-        <th></th>
-        <For each={days()}>{(day) => (
-          <th>{day}</th>
-        )}</For>
-        <th>W</th>
-        <th>H</th>
-        <th>L</th>
-        <th>W</th>
-        <th>H</th>
-        <th>L</th>
-        <th>W</th>
-      </tr>
-    </>
-  );
-}
-
-
-function Headers2() {
-  const days = () => ['', 'M', 'T', 'W', 'T', 'F', ''];
-  return (
-    <>
-      <tr>
-        <For each={days()}>{(day) => (
-          <th>{day}</th>
-        )}</For>
-      </tr>
-    </>
-  );
-}
 
 function Month(props) {
-  const first = () => newDateYMD(props.year, props.month, 1);
-  const leading_blanks = () => first().getDay();
-  const trailing_blanks = () => 6 * 7 - daysInMonth(props.year, props.month) - leading_blanks();
-
   return (
-    <tr classList={{ [styles.current]: isThisMonth(props.year, props.month) }}>
-      <th>{monthName(props.month)}</th>
-      <Blanks count={leading_blanks()} />
-      <For each={[...Array(daysInMonth(props.year, props.month)).keys()]}>{
-        (day) => (
-          <Day year={props.year} month={props.month} day={day + 1} />
-        )}</For>
-      <Blanks count={trailing_blanks()} />
-      <MonthTotals year={props.year} month={props.month} />
-    </tr>
+    <div classList={{ [styles.month]: true, [styles.current]: isThisMonth(props.year, props.month) }}>
+      <div class={styles.monthName}>{monthName(props.month)}</div>
+      <MonthWeek year={props.year} month={props.month} week={1} />
+      <MonthWeek year={props.year} month={props.month} week={2} />
+      <MonthWeek year={props.year} month={props.month} week={3} />
+      <MonthWeek year={props.year} month={props.month} week={4} />
+      <MonthWeek year={props.year} month={props.month} week={5} />
+      <MonthWeek year={props.year} month={props.month} week={6} />
+      <MonthTotals2 year={props.year} month={props.month} />
+    </div>
   );
 }
 
@@ -289,20 +200,20 @@ function MonthWeek(props) {
   }
   const weekDays = () => [...Array(daysInMonth(props.year, props.month)).keys()].slice(Math.max(0, (props.week - 1) * 7 - leading_blanks()), props.week * 7 - leading_blanks());
   return (
-    <tr classList={{ [styles.current]: isThisMonth(props.year, props.month) }}>
+    <div classList={{ [styles.week]: true, [styles.current]: isThisMonth(props.year, props.month) }}>
       <Blanks count={props.week == 1 ? leading_blanks() : 0} />
       <For each={weekDays()}>{(day) => (
         <Day year={props.year} month={props.month} day={day + 1} />
       )}</For>
       <Blanks count={trailing_blanks()} />
-    </tr>
+    </div>
   );
 }
 
 function Blanks(props) {
   return (
     <For each={[...Array(props.count).keys()]}>{() => (
-      <td></td>
+      <div class={styles.day}></div>
     )}</For>
   );
 }
@@ -332,12 +243,12 @@ function Day(props) {
   };
 
   return (
-    <td classList={tdClass()} onclick={(event) => populateToolbar(event, props.year, props.month, props.day)}>
-      <div class={styles.day}>
+    <div classList={tdClass()} onclick={(event) => populateToolbar(event, props.year, props.month, props.day)}>
+      <div class={styles.day2}>
         <span class={styles.dayNum}>{props.day}</span>
         <span class={styles.dayLoc}>{(getDayLoc(props.year, props.month, props.day) + ' ')[0].toUpperCase()}</span>
       </div>
-    </td>
+    </div>
   );
 }
 
@@ -491,6 +402,7 @@ function ToolBar() {
       <input type="date" name="to_date" value={state.ui.toolbar.to_date}
         min={state.ui.year + '-01-01'} max={state.ui.year + '-12-31'}
         oninput={onToolbarDateChange} />
+      <button name="today" title="Select today" onclick={() => gotoToday()}>{new Date().getDate()}</button>
       <br />
       <input type="radio" name="loc_radio" id="loc_radio1"
         value="" checked={state.ui.toolbar.loc === ""}
@@ -682,7 +594,7 @@ function handleKeydown(event) {
   switch (event.key) {
     case 'ArrowLeft': {
       event.preventDefault();
-      const iso_date = moveIsoDate(state.ui.toolbar.from_date, 0, -1);
+      const iso_date = moveIsoDate(state.ui.toolbar.from_date, 0, -1, moveToPreviousMonthOnFirst);
       setState('ui', 'toolbar', 'from_date', iso_date);
       if (!event.shiftKey) {
         setState('ui', 'toolbar', 'to_date', iso_date);
@@ -692,7 +604,7 @@ function handleKeydown(event) {
     }
     case 'ArrowRight': {
       event.preventDefault();
-      const iso_date = moveIsoDate(state.ui.toolbar.to_date, 0, +1);
+      const iso_date = moveIsoDate(state.ui.toolbar.to_date, 0, +1, moveToNextMonthOnLast);
       setState('ui', 'toolbar', 'to_date', iso_date);
       if (!event.shiftKey) {
         setState('ui', 'toolbar', 'from_date', iso_date);
@@ -702,7 +614,7 @@ function handleKeydown(event) {
     }
     case 'ArrowUp': {
       event.preventDefault();
-      const iso_date = moveIsoDate(state.ui.toolbar.from_date, -1, 0);
+      const iso_date = moveIsoDate(state.ui.toolbar.from_date, 0, -7, moveToPreviousMonthOnFirst);
       setState('ui', 'toolbar', 'from_date', iso_date);
       if (!event.shiftKey) {
         setState('ui', 'toolbar', 'to_date', iso_date);
@@ -712,7 +624,7 @@ function handleKeydown(event) {
     }
     case 'ArrowDown': {
       event.preventDefault();
-      const iso_date = moveIsoDate(state.ui.toolbar.to_date, +1, 0);
+      const iso_date = moveIsoDate(state.ui.toolbar.to_date, 0, +7, moveToNextMonthOnLast);
       setState('ui', 'toolbar', 'to_date', iso_date);
       if (!event.shiftKey) {
         setState('ui', 'toolbar', 'from_date', iso_date);
@@ -883,6 +795,20 @@ function getYearMonthDate(date) {
   ];
 }
 
+function gotoToday() {
+  const today = new Date();
+  setState('ui', 'year', today.getFullYear());
+  populateToolbar(
+    { preventDefault: () => { } },
+    today.getFullYear(),
+    today.getMonth() + 1,
+    today.getDate());
+
+  const months = document.querySelectorAll("." + styles.month);
+  if (months.length)
+    months[today.getMonth()].scrollIntoView({ block: 'center' });
+}
+
 function isToday(year, month, day) {
   const [year2, month2, day2] = getYearMonthDate(new Date());
   return year === year2 && month === month2 && day === day2;
@@ -909,7 +835,12 @@ function monthName(month) {
   return newDateYMD(2025, month, 1).toLocaleString('default', { month: 'long' });
 }
 
-function moveIsoDate(iso_date, month_delta, day_delta) {
+function moveIsoDate(iso_date, month_delta, day_delta, handleSpecialCase) {
+  const special_case = handleSpecialCase && handleSpecialCase(iso_date);
+  if (special_case) {
+    return special_case;
+  }
+
   const date = newDate(iso_date);
   const [year, month1, day1] = getYearMonthDate(date);
   const month2 = Math.max(1, Math.min(month1 + month_delta, 12));
@@ -928,6 +859,30 @@ function monthRowOffset(year, month1, month2) {
   const date1 = newDateYMD(year, month1, 1);
   const date2 = newDateYMD(year, month2, 1);
   return date1.getUTCDay() - date2.getUTCDay();
+}
+
+function moveToPreviousMonthOnFirst(iso_date) {
+  const date = newDate(iso_date);
+  const [year, month1, day1] = getYearMonthDate(date);
+  if (day1 === 1 && month1 > 1) {
+    const month2 = month1 - 1;
+    const day2 = daysInMonth(year, month2);
+    const date2 = newDateYMD(year, month2, day2);
+    return toIsoDate(date2);
+  }
+  return null;
+}
+
+function moveToNextMonthOnLast(iso_date) {
+  const date = newDate(iso_date);
+  const [year, month1, day1] = getYearMonthDate(date);
+  const day2 = daysInMonth(year, month1);
+  if (day1 === day2 && month1 < 12) {
+    const month2 = month1 + 1;
+    const date2 = newDateYMD(year, month2, 1);
+    return toIsoDate(date2);
+  }
+  return null;
 }
 
 export default App;

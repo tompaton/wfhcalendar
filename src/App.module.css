@@ -2,7 +2,8 @@
   text-align: center;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  flex-wrap: nowrap;
+  height: 100vh;
 
   accent-color: navy;
 }
@@ -11,9 +12,6 @@
   background-color: #282c34;
   font-size: 1.25em;
   color: #bac5d5;
-  top: 0;
-  position: sticky;
-  z-index: 3;
 }
 
 .App header h1 {
@@ -23,9 +21,6 @@
 .App footer {
   background-color: #bac5d5;
   color: #282c34;
-  bottom: 0;
-  position: sticky;
-  z-index: 3;
 }
 
 .App footer a {
@@ -34,6 +29,8 @@
 
 .App .content {
   flex-grow: 1;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
 }
 
 .yearSelector {
@@ -75,7 +72,64 @@
   }
 }
 
-/* calendar table */
+button[name=today] {
+  border: 1px solid navy;
+  border-top: 3px solid navy;
+}
+
+/* calendar flex */
+
+.year {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.month {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  margin-bottom: 10px;
+}
+
+.monthName {
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.week {
+  display: flex;
+}
+
+.day {
+  flex: 1;
+}
+
+
+/* selection */
+
+.calendar .day {
+  border: 3px dashed transparent;
+  margin-left: -3px;
+  margin-top: -3px;
+}
+
+.calendar .selection {
+  border: 3px solid #e95420 !important;
+}
+
+.calendar .selection+.selection {
+  border-left: 3px dashed transparent !important;
+}
+
+.calendar .selection:has(+.selection) {
+  border-right: 3px dashed transparent !important;
+}
+
+
+/* summary table */
 
 .calendar {
   margin: 2em auto;
@@ -95,32 +149,13 @@
   padding: 0.25em 1em;
 }
 
-.calendar tbody td {
-  padding: 0px;
-  border: 3px dashed transparent;
-}
+/* day formatting */
 
-.calendar tbody td.selection {
-  border: 3px solid #e95420 !important;
-}
-
-.calendar tbody td.selection+td.selection {
-  border-left: 3px dashed transparent !important;
-}
-
-.calendar tbody td.selection:has(+td.selection) {
-  border-right: 3px dashed transparent !important;
-}
-
-.calendar tr.current th {
+.calendar .day.current {
   font-weight: bold;
+  /* border: 3px solid cornflowerblue; */
 }
 
-/*
-.calendar tr.current td.current {
-  border: 3px solid cornflowerblue;
-}
-*/
 
 .calendar .day {
   position: relative;
@@ -128,8 +163,13 @@
   height: 2em;
 }
 
-.calendar .weekday .day {
-  border: 1px solid silver;
+.calendar .weekday .day2 {
+  padding: 1px;
+}
+
+.calendar .work .dayLoc,
+.calendar .home .dayLoc,
+.calendar .leave .dayLoc {
   border-radius: 20%;
   box-sizing: border-box;
 }
@@ -325,11 +365,11 @@ dialog button {
     display: none;
   }
 
-  .calendar tbody td {
+  /* .calendar tbody td {
     border: none;
   }
 
   .calendar .weekday .day {
     border: none;
-  }
+  } */
 }
