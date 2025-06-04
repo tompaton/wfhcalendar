@@ -863,7 +863,7 @@ function gotoToday() {
 
   const months = document.querySelectorAll("." + styles.month);
   if (months.length)
-    months[today.getMonth()].scrollIntoView({ block: 'center' });
+    months[2 + today.getMonth()].scrollIntoView({ block: 'center' });
 }
 
 function isToday(year, month, day) {
