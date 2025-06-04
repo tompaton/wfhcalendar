@@ -12,7 +12,7 @@ const [state, setState] = createSyncedStore(
   },
   {
     // UI state (won't be synced)
-    render_mode: 'mobile',
+    render_mode: 'months',
     year: new Date().getFullYear(),
     last_backup: null,
     last_loc: 'work',
@@ -92,9 +92,6 @@ function getSelectionTotalPercent() {
 }
 
 function App() {
-  // update current view
-  setState('ui', 'render_mode', window.innerWidth < 1200 ? 'mobile' : 'desktop');
-
   gotoToday();
 
   // capture and remove previous event listener if any, otherwise vite will keep
@@ -143,6 +140,15 @@ function YearSelector() {
       <button title="Previous" onclick={() => setState('ui', 'year', state.ui.year - 1)}>&lt;</button>
       <span>{state.ui.year}</span>
       <button title="Next" onclick={() => setState('ui', 'year', state.ui.year + 1)}>&gt;</button>
+
+      <span class={styles.desktopOnly}>
+        <Show when={state.ui.render_mode !== 'rows'}>
+          <button title="Show months in grid" onClick={() => setState('ui', 'render_mode', 'rows')}>▤</button>
+        </Show>
+        <Show when={state.ui.render_mode === 'rows'}>
+          <button title="Show months in rows" onClick={() => setState('ui', 'render_mode', 'months')}>⋮⋮⋮</button>
+        </Show>
+      </span>
     </div>
   );
 }
@@ -168,8 +174,9 @@ function Menu() {
 
 function DesktopCalendar(props) {
   return (
-    <div class={styles.calendar}>
+    <div classList={{ [styles.calendar]: true, [styles.alt]: state.ui.render_mode === 'rows' }}>
       <div class={styles.year}>
+        <Headers />
         <For each={[...Array(12).keys()]}>{(month) => (
           <Month year={props.year} month={month + 1} />
         )}</For>
@@ -178,6 +185,46 @@ function DesktopCalendar(props) {
   );
 }
 
+
+function Headers() {
+  function* daysGen() {
+    for (let i = 0; i < 6; i++)
+      for (let d of ['', 'M', 'T', 'W', 'T', 'F', ''])
+        yield d;
+  };
+
+  const days = () => [...daysGen()];
+  return (
+    <div class={styles.headers}>
+      <div class={styles.month}>
+        <div class={styles.monthName}></div>
+        <For each={days()}>{(day) => (
+          <div class={styles.day}><span></span></div>
+        )}</For>
+        <div class={styles.day}><span>Total</span></div>
+        <div class={styles.day}><span></span></div>
+        <div class={styles.day}><span></span></div>
+        <div class={styles.day}><span>Cumulative</span></div>
+        <div class={styles.day}><span></span></div>
+        <div class={styles.day}><span></span></div>
+        <div class={styles.day}><span>Percentage</span></div>
+      </div>
+      <div class={styles.month}>
+        <div class={styles.monthName}></div>
+        <For each={days()}>{(day) => (
+          <div class={styles.day}><span>{day}</span></div>
+        )}</For>
+        <div class={styles.day}><span>W</span></div>
+        <div class={styles.day}><span>H</span></div>
+        <div class={styles.day}><span>L</span></div>
+        <div class={styles.day}><span>W</span></div>
+        <div class={styles.day}><span>H</span></div>
+        <div class={styles.day}><span>L</span></div>
+        <div class={styles.day}><span>W</span></div>
+      </div>
+    </div>
+  );
+}
 
 function Month(props) {
   return (
@@ -258,7 +305,7 @@ function Day(props) {
 
 function MonthTotals(props) {
   return (
-    <>
+    <tr>
       <td>{getMonthTotal(props.year, props.month, 'work') || ''}</td>
       <td>{getMonthTotal(props.year, props.month, 'home') || ''}</td>
       <td>{getMonthTotal(props.year, props.month, 'leave') || ''}</td>
@@ -266,13 +313,13 @@ function MonthTotals(props) {
       <td>{getCumulativeMonthTotal(props.year, props.month, 'home') || ''}</td>
       <td>{getCumulativeMonthTotal(props.year, props.month, 'leave') || ''}</td>
       <td>{getCumulativeMonthTotalPercent(props.year, props.month, 'work', 'work', 'home')}</td>
-    </>
+    </tr>
   );
 }
 
 function MonthTotals2(props) {
   return (
-    <table class={styles.calendar}>
+    <table>
       <thead>
         <tr>
           <th colspan={3}>Total</th>
@@ -598,7 +645,8 @@ function handleKeydown(event) {
   switch (event.key) {
     case 'ArrowLeft': {
       event.preventDefault();
-      const iso_date = moveIsoDate(state.ui.toolbar.from_date, 0, -1, moveToPreviousMonthOnFirst);
+      const iso_date = moveIsoDate(state.ui.toolbar.from_date, 0, -1,
+        state.ui.render_mode !== 'rows' ? moveToPreviousMonthOnFirst : undefined);
       setState('ui', 'toolbar', 'from_date', iso_date);
       if (!event.shiftKey) {
         setState('ui', 'toolbar', 'to_date', iso_date);
@@ -608,7 +656,8 @@ function handleKeydown(event) {
     }
     case 'ArrowRight': {
       event.preventDefault();
-      const iso_date = moveIsoDate(state.ui.toolbar.to_date, 0, +1, moveToNextMonthOnLast);
+      const iso_date = moveIsoDate(state.ui.toolbar.to_date, 0, +1,
+        state.ui.render_mode !== 'rows' ? moveToNextMonthOnLast : undefined);
       setState('ui', 'toolbar', 'to_date', iso_date);
       if (!event.shiftKey) {
         setState('ui', 'toolbar', 'from_date', iso_date);
@@ -618,7 +667,9 @@ function handleKeydown(event) {
     }
     case 'ArrowUp': {
       event.preventDefault();
-      const iso_date = moveIsoDate(state.ui.toolbar.from_date, 0, -7, moveToPreviousMonthOnFirst);
+      const iso_date = (state.ui.render_mode !== 'rows'
+        ? moveIsoDate(state.ui.toolbar.from_date, 0, -7, moveToPreviousMonthOnFirst)
+        : moveIsoDate(state.ui.toolbar.from_date, -1, 0));
       setState('ui', 'toolbar', 'from_date', iso_date);
       if (!event.shiftKey) {
         setState('ui', 'toolbar', 'to_date', iso_date);
@@ -628,7 +679,9 @@ function handleKeydown(event) {
     }
     case 'ArrowDown': {
       event.preventDefault();
-      const iso_date = moveIsoDate(state.ui.toolbar.to_date, 0, +7, moveToNextMonthOnLast);
+      const iso_date = (state.ui.render_mode !== 'rows'
+        ? moveIsoDate(state.ui.toolbar.to_date, 0, +7, moveToNextMonthOnLast)
+        : moveIsoDate(state.ui.toolbar.to_date, +1, 0));
       setState('ui', 'toolbar', 'to_date', iso_date);
       if (!event.shiftKey) {
         setState('ui', 'toolbar', 'from_date', iso_date);

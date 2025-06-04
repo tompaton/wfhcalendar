@@ -29,7 +29,7 @@
 
 .App .content {
   flex-grow: 1;
-  overflow-y: scroll;
+  overflow: scroll;
   scroll-snap-type: y mandatory;
 }
 
@@ -103,10 +103,58 @@ button[name=today] {
   display: flex;
 }
 
-.day {
-  flex: 1;
+
+/* row mode */
+
+.alt .year .month {
+  flex-direction: row;
+  margin-bottom: 0;
 }
 
+.alt .year .monthName {
+  width: 6em;
+  text-align: right;
+  padding-right: 1em;
+}
+
+.alt .year .week {
+  display: contents;
+}
+
+.alt table {
+  display: contents;
+}
+
+.alt table thead {
+  display: none;
+}
+
+.alt table tbody {
+  display: contents;
+}
+
+.alt table tr {
+  display: contents;
+}
+
+.alt table td {
+  display: flex;
+  flex: 1;
+  width: 2em;
+}
+
+.headers {
+  display: none;
+}
+
+.alt .headers {
+  display: flex;
+  flex-direction: column;
+}
+
+.alt .headers .day span {
+  font-size: 0.75em;
+}
 
 /* selection */
 
@@ -114,6 +162,7 @@ button[name=today] {
   border: 3px dashed transparent;
   margin-left: -3px;
   margin-top: -3px;
+  overflow: visible;
 }
 
 .calendar .selection {
@@ -338,7 +387,7 @@ dialog button {
 /* mobile mode */
 
 .desktopOnly {
-  display: block;
+  display: unset;
 }
 
 .mobileOnly {
@@ -355,7 +404,7 @@ dialog button {
   }
 
   .mobileOnly {
-    display: block;
+    display: unset;
   }
 }
 
